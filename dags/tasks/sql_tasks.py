@@ -3,8 +3,7 @@ import pyodbc
 import pandas as pd
 import json
 import os, base64
-
-sql_conn = base64.b64decode(os.environ['SQL_SERVER_CONN']).decode('utf-8')
+from airflow.hooks.base import BaseHook
 
 def get_conn_str():
     # """Build connection string from environment variables."""
@@ -13,6 +12,18 @@ def get_conn_str():
     # server = os.getenv("SQL_SERVER", "sql-ml-ftai-dev.database.windows.net")
     # db = os.getenv("SQL_DATABASE", "mldb-dev")
     # driver = "{ODBC Driver 18 for SQL Server}"
+    conn = BaseHook.get_connection("sql_server_fraud")
+
+    sql_conn = (
+        f"Driver={{ODBC Driver 17 for SQL Server}};"
+        f"Server=tcp:{conn.host},{conn.port or 1433};"
+        f"Database={conn.schema};"
+        f"Uid={conn.login};"
+        f"Pwd={conn.password};"
+        f"Encrypt=yes;"
+        f"TrustServerCertificate=no;"
+        f"Connection Timeout=30;"
+    )
 
     return (
         sql_conn
