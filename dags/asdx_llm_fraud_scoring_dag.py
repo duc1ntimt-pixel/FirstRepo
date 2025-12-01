@@ -1,4 +1,7 @@
 import os
+import sys
+
+sys.path.append("/opt/airflow/dags/tasks")
 from airflow import DAG
 from airflow.decorators import task
 from datetime import datetime, timedelta
