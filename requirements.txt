@@ -1,0 +1,5 @@
+apache-airflow==3.0.0
+pandas
+pyodbc
+scikit-learn
+requests
