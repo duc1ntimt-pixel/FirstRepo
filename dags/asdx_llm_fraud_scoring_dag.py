@@ -2,10 +2,10 @@ import os
 from airflow import DAG
 from airflow.decorators import task
 from datetime import datetime, timedelta
-from .tasks.sql_tasks import check_sql_connection, load_data, save_results
-from .tasks.etl_tasks import run_etl_steps
-from .tasks.model_tasks import train_model
-from .tasks.api_tasks import trigger_api
+from tasks.sql_tasks import check_sql_connection, load_data, save_results
+from tasks.etl_tasks import run_etl_steps
+from tasks.model_tasks import train_model
+from tasks.api_tasks import trigger_api
 from pipelines.llm_fraud_scoring import PIPELINE  # dictionary chứa query, endpoint, etl_steps
 from utils.db import get_connection_string
 conn_str = get_connection_string()
