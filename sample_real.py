@@ -14,9 +14,14 @@ import requests
 # -------------------------------
 # Config
 # -------------------------------
-CSV_INPUT = "/opt/airflow/dags/data/input.csv"
-CSV_OUTPUT_DIR = "/opt/airflow/dags/data/results/"
-MODEL_DIR = "/opt/airflow/dags/models"
+CSV_INPUT       = "/mnt/models/data/input.csv"
+CSV_OUTPUT_DIR  = "/mnt/models/data/results/"
+MODEL_DIR       = "/mnt/models/models"
+import os
+os.makedirs("/mnt/models/data", exist_ok=True)
+os.makedirs("/mnt/models/data/results", exist_ok=True)
+os.makedirs("/mnt/models/models", exist_ok=True)
+
 MODELS = ["fraud_v1", "fraud_v2", "aml_v1", "credit_v1", "risk_v1"]
 API_ENDPOINT = "http://192.168.100.117:30082/predict"
 
