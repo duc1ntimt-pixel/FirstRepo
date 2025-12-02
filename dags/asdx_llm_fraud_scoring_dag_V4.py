@@ -30,22 +30,21 @@ with DAG(
 ) as dag:
 
     conn_ok = check_sql_connection(conn_str)
-
     # # Step 1: Query SQL Azure
-    # base_json = load_data(conn_str, PIPELINE["load_query"])
+    base_json = load_data(conn_str, PIPELINE["load_query"])
 
     # # Step 2: ETL Steps
-    # expanded_json = run_etl_steps(base_json, PIPELINE.get("etl_steps"))
+    expanded_json = run_etl_steps(base_json, PIPELINE.get("etl_steps"))
 
     # # Step 3: Run file Py (Clear Data > Training Model > Weights) main.py
     # # Step 4: Expose Model API (CI/CD Host Training Model via AKS) app.py
-    # transformed_json = train_model(expanded_json)
+    transformed_json = train_model(expanded_json)
     
     # # Step 5: Wait Model On-read => Call Model API in this step 4
-    # api_result_json = trigger_api(transformed_json, PIPELINE["api_endpoint"])
+    api_result_json = trigger_api(transformed_json, PIPELINE["api_endpoint"])
     
     # # Step 6: Write results into SQL Azure (Inferences Model x Save Results)
-    # save_results_task = save_results(conn_str, api_result_json, PIPELINE["results_table"])
+    save_results_task = save_results(conn_str, api_result_json, PIPELINE["results_table"])
 
     # # Dependencies
-    # conn_ok >> base_json >> expanded_json >> api_result_json >> save_results_task
+    conn_ok >> base_json >> expanded_json >> api_result_json >> save_results_task
