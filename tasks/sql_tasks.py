@@ -32,7 +32,7 @@ def get_conn_str():
         f"Uid={conn.login};"
         f"Pwd={conn.password};"
         f"Encrypt=yes;"
-        f"TrustServerCertificate=no;"
+        f"TrustServerCertificate=Yes;"
         f"Connection Timeout=30;"
     )
     logger.info(f"connectStr={conn}")
