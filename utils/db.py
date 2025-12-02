@@ -1,5 +1,15 @@
 import os
+import logging
 
+logger = logging.getLogger("multi_model_demo_dag")
+logger.setLevel(logging.INFO)
+if not logger.handlers:
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    
 def get_connection_string():
     """
     Build SQL Server connection string from environment variables.
@@ -7,7 +17,7 @@ def get_connection_string():
     """
 
     SQL_USERNAME = os.getenv("SQL_USERNAME", "sqladmin")
-    SQL_PASSWORD = os.getenv("SQL_PASSWORD", "xx!")  # default dev (không dùng production)
+    SQL_PASSWORD = os.getenv("SQL_PASSWORD", "xx!") 
     SQL_SERVER   = os.getenv("SQL_SERVER", "sql-ml-ftai-dev.database.windows.net")
     SQL_DATABASE = os.getenv("SQL_DATABASE", "mldb-dev")
 

@@ -1,18 +1,26 @@
 import sys
 sys.path.insert(0, "/opt/airflow/dags/repo")
-
+import logging
 import os
 from airflow import DAG
 from airflow.decorators import task
 from datetime import datetime, timedelta
-from tasks.sql_tasks import check_sql_connection, load_data, save_results
+from tasks.sql_tasks import check_sql_connection, load_data, save_results, get_conn_str
 from tasks.etl_tasks import run_etl_steps
 from tasks.model_tasks import train_model
 from tasks.api_tasks import trigger_api
 from pipelines.llm_fraud_scoring import PIPELINE  # dictionary chứa query, endpoint, etl_steps
-from utils.db import get_connection_string
-conn_str = get_connection_string()
+conn_str = get_conn_str()
 
+logger = logging.getLogger("multi_model_demo_dag")
+logger.setLevel(logging.INFO)
+if not logger.handlers:
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    
 default_args = {
     "owner": "asdx-ai-team",
     "depends_on_past": False,

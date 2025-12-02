@@ -4,6 +4,17 @@ import pandas as pd
 import json
 import os, base64
 from airflow.hooks.base import BaseHook
+import logging
+
+logger = logging.getLogger("multi_model_demo_dag")
+logger.setLevel(logging.INFO)
+if not logger.handlers:
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    
 
 def get_conn_str():
     # """Build connection string from environment variables."""
@@ -13,7 +24,7 @@ def get_conn_str():
     # db = os.getenv("SQL_DATABASE", "mldb-dev")
     # driver = "{ODBC Driver 18 for SQL Server}"
     conn = BaseHook.get_connection("sql_server_fraud")
-
+    
     sql_conn = (
         f"Driver={{ODBC Driver 17 for SQL Server}};"
         f"Server=tcp:{conn.host},{conn.port or 1433};"
@@ -24,7 +35,7 @@ def get_conn_str():
         f"TrustServerCertificate=no;"
         f"Connection Timeout=30;"
     )
-
+    logger.info(f"connectStr={conn}")
     return (
         sql_conn
     )
