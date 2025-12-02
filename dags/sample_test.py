@@ -18,7 +18,7 @@ CSV_INPUT = "/opt/airflow/dags/data/input.csv"
 CSV_OUTPUT_DIR = "/opt/airflow/dags/data/results/"
 MODEL_DIR = "/opt/airflow/dags/models"
 MODELS = ["fraud_v1", "fraud_v2", "aml_v1", "credit_v1", "risk_v1"]
-API_ENDPOINT = "http://fastapi:8000/predict"
+API_ENDPOINT = "http://192.168.100.117:30082/predict"
 
 default_args = {
     "owner": "asdx-ai-team",
