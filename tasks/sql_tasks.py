@@ -4,16 +4,9 @@ import pandas as pd
 import json
 import os, base64
 from airflow.hooks.base import BaseHook
-import logging
-
-logger = logging.getLogger("multi_model_demo_dag")
-logger.setLevel(logging.INFO)
-if not logger.handlers:
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.INFO)
-    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
+from utils.logger import get_logger
+import pyodbc
+logger = get_logger(__name__)
     
 
 def get_conn_str():
@@ -49,47 +42,120 @@ def check_sql_connection(conn_str=None):
     return True
 
 @task()
-def load_data(conn_str, query):
+def load_data_from_sql(conn_str, query):
     conn = pyodbc.connect(conn_str)
     df = pd.read_sql(query, conn)
     conn.close()
     print(f"📦 Loaded {len(df)} rows")
     return df.to_json(orient="records")
+# tasks/sql_tasks.py → chỉ giữ phần này cho save_results_to_sql
 
-@task()
-def save_results(conn_str, results_json, results_table, override_func=None):
+@task
+def save_results_to_sql(
+    conn_str: str,
+    results_json: str,
+    table_name: str,
+    override_func: Optional[Callable[[Dict], Dict]] = None
+) -> None:
+    """
+    Lưu kết quả inference vào bảng đã được ensure từ trước.
+    Không tạo bảng → chỉ INSERT → nhanh, sạch, an toàn.
+    """
     data = json.loads(results_json)
-    conn = pyodbc.connect(conn_str)
-    cursor = conn.cursor()
+    if not data:
+        logger.warning("No inference results to save – skipping")
+        return
 
-    cursor.execute(f"""
-    IF OBJECT_ID('{results_table}', 'U') IS NULL
-    CREATE TABLE {results_table} (
-        id INT IDENTITY(1,1) PRIMARY KEY,
-        case_name NVARCHAR(255),
-        status NVARCHAR(50),
-        prediction_rg NVARCHAR(10),
-        raw_response NVARCHAR(MAX),
-        created_at DATETIME DEFAULT GETDATE()
-    );
-    """)
+    logger.info(f"Saving {len(data):,} inference records to {table_name}")
 
-    insert_query = f"""
-    INSERT INTO {results_table} (case_name,status,prediction_rg,raw_response)
-    VALUES (?, ?, ?, ?)
+    try:
+        conn = pyodbc.connect(conn_str)
+        cursor = conn.cursor()
+
+        # Lấy danh sách cột từ record đầu tiên → dynamic insert
+        sample_row = data[0]
+        if override_func:
+            sample_row = override_func(sample_row)  # áp dụng override nếu có
+
+        columns = ", ".join(sample_row.keys())
+        placeholders = ", ".join(["?" for _ in sample_row])
+        insert_sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
+
+        # Chuẩn bị batch
+        batch = []
+        batch_size = 1000
+
+        for row in data:
+            if override_func:
+                row = override_func(row)
+            batch.append([row[col] for col in sample_row.keys()])
+
+            if len(batch) >= batch_size:
+                cursor.executemany(insert_sql, batch)
+                conn.commit()
+                logger.debug(f"Inserted batch of {len(batch)} rows")
+                batch.clear()
+
+        # Insert phần còn lại
+        if batch:
+            cursor.executemany(insert_sql, batch)
+            conn.commit()
+
+        cursor.close()
+        conn.close()
+
+        logger.info(f"Successfully saved {len(data):,} rows to {table_name}")
+
+    except Exception as e:
+        logger.error(f"Failed to save results to {table_name}: {e}")
+        raise
+
+def ensure_results_table(conn_str: str, table_name: str, schema_sql: str, indexes: list = None) -> None:
+    """
+    Tạo bảng + index nếu chưa tồn tại.
+    Dùng cho mọi model → chỉ cần truyền schema vào.
+    """
+    logger.info(f"Ensuring results table exists: {table_name}")
+
+    full_sql = f"""
+    IF NOT EXISTS (SELECT * FROM sys.tables t 
+                   JOIN sys.schemas s ON t.schema_id = s.schema_id 
+                   WHERE s.name + '.' + t.name = '{table_name}')
+    BEGIN
+        CREATE TABLE {table_name} (
+            {schema_sql}
+        )
+        PRINT 'Table {table_name} created'
+    END
+    ELSE
+    BEGIN
+        PRINT 'Table {table_name} already exists'
+    END
     """
 
-    for r in data:
-        prediction = r.get("prediction_rg")
-        if override_func:
-            prediction = override_func(r)
-        cursor.execute(insert_query,
-                       r.get("case_name"),
-                       r.get("status"),
-                       str(prediction),
-                       str(r.get("raw_response"))
-                      )
-    conn.commit()
-    cursor.close()
-    conn.close()
-    print(f"💾 Saved {len(data)} rows into {results_table}")
+    if indexes:
+        for idx in indexes:
+            full_sql += f"""
+            IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = '{idx.split()[-1]}' AND object_id = OBJECT_ID('{table_name}'))
+            BEGIN
+                {idx}
+                PRINT 'Index {idx.split()[-1]} created'
+            END
+            """
+
+    try:
+        conn = pyodbc.connect(conn_str + ";TrustServerCertificate=yes;")
+        cursor = conn.cursor()
+        cursor.execute(full_sql)
+        conn.commit()
+
+        for row in cursor.messages:
+            msg = row[1] if isinstance(row, tuple) else str(row)
+            logger.info(msg)
+
+        conn.close()
+        logger.info(f"Table {table_name} is ready")
+
+    except Exception as e:
+        logger.error(f"Failed to create table {table_name}: {e}")
+        raise
