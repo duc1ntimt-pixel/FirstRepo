@@ -5,7 +5,7 @@ import os
 from airflow import DAG
 from airflow.decorators import task
 from datetime import datetime, timedelta
-from tasks.sql_tasks import check_sql_connection, load_data_from_sql, save_results, get_conn_str
+from tasks.sql_tasks import check_sql_connection, load_data_from_sql, save_results_to_sql, get_conn_str
 from tasks.etl_tasks import run_etl_steps
 from tasks.model_tasks import train_model
 from tasks.api_tasks import trigger_api
@@ -52,7 +52,7 @@ with DAG(
     api_result_json = trigger_api(transformed_json, PIPELINE["api_endpoint"])
     
     # # Step 6: Write results into SQL Azure (Inferences Model x Save Results)
-    save_results_task = save_results(conn_str, api_result_json, PIPELINE["results_table"])
+    save_results_task = save_results_to_sql(conn_str, api_result_json, PIPELINE["results_table"])
 
     # # Dependencies
     conn_ok >> base_json >> expanded_json >> api_result_json >> save_results_task
