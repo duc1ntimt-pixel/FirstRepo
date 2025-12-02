@@ -21,7 +21,7 @@ default_args = {
 }
 
 with DAG(
-    dag_id="asdx_llm_fraud_scoring_dag_demo",
+    dag_id="asdx_llm_fraud_scoring_dag_demo_v5",
     start_date=datetime(2025, 1, 1),
     schedule=None,
     catchup=False,

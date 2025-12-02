@@ -7,7 +7,7 @@ default_args = {
 }
 
 with DAG(
-    dag_id="demo_echo_hello",
+    dag_id="demo_echo_hello_v1",
     description="Simple one-step DAG that prints hello",
     default_args=default_args,
     start_date=datetime(2025, 1, 1),
