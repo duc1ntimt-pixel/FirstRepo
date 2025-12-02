@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0, "/opt/airflow/dags/repo/dags")
+sys.path.insert(0, "/opt/airflow/dags/repo")
 
 import os
 from airflow import DAG

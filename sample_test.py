@@ -1,6 +1,6 @@
 import os
 import sys
-sys.path.insert(0, "/opt/airflow/dags/repo/dags")
+sys.path.insert(0, "/opt/airflow/dags/repo")
 
 import json
 import pandas as pd
