@@ -13,7 +13,7 @@ from tasks.sql_tasks import (
     load_data_from_sql,
     save_results_to_sql,
     ensure_results_table,
-    get_connection_string,
+    get_conn_str,
 )
 from tasks.model_tasks.rg_detection.train import train_rg_model
 from tasks.model_tasks.rg_detection.predict import predict_rg_model
@@ -21,7 +21,7 @@ from pipelines.rg_detection import PIPELINE
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
-conn_str = get_connection_string()
+conn_str = get_conn_str()
 
 # ==================== DAG ====================
 with DAG(

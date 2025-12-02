@@ -110,40 +110,40 @@ def save_results_to_sql(
     except Exception as e:
         logger.error(f"Failed to save results to {table_name}: {e}")
         raise
-
 def ensure_results_table(conn_str: str, table_name: str, schema_sql: str, indexes: list = None) -> None:
     """
     Tạo bảng + index nếu chưa tồn tại.
-    Dùng cho mọi model → chỉ cần truyền schema vào.
     """
     logger.info(f"Ensuring results table exists: {table_name}")
 
     full_sql = f"""
-    IF NOT EXISTS (SELECT * FROM sys.tables t 
-                   JOIN sys.schemas s ON t.schema_id = s.schema_id 
-                   WHERE s.name + '.' + t.name = '{table_name}')
-    BEGIN
-        CREATE TABLE {table_name} (
-            {schema_sql}
-        )
-        PRINT 'Table {table_name} created'
-    END
-    ELSE
-    BEGIN
-        PRINT 'Table {table_name} already exists'
-    END
-    """
+IF NOT EXISTS (SELECT * FROM sys.tables t 
+               JOIN sys.schemas s ON t.schema_id = s.schema_id 
+               WHERE s.name + '.' + t.name = '{table_name}')
+BEGIN
+    CREATE TABLE {table_name} (
+        {schema_sql}
+    )
+    PRINT 'Table {table_name} created'
+END
+ELSE
+BEGIN
+    PRINT 'Table {table_name} already exists'
+END
+"""
 
     if indexes:
         for idx in indexes:
+            index_name = idx.split()[-1].replace("'", "''")  # escape nếu có '
             full_sql += f"""
-            IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = '{idx.split()[-1]}' AND object_id = OBJECT_ID('{table_name}'))
-            BEGIN
-                {idx}
-                PRINT 'Index {idx.split()[-1]} created'
-            END
-            """
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = '{index_name}' AND object_id = OBJECT_ID('{table_name}'))
+BEGIN
+    {idx}
+    PRINT 'Index {index_name} created'
+END
+"""
 
+    conn = None
     try:
         conn = pyodbc.connect(conn_str + ";TrustServerCertificate=yes;")
         cursor = conn.cursor()
@@ -155,9 +155,11 @@ def ensure_results_table(conn_str: str, table_name: str, schema_sql: str, indexe
             logger.info(msg)
 
         logger.info(f"Table {table_name} is ready")
-    
+
     except Exception as e:
         logger.error(f"Failed to create table {table_name}: {e}")
         raise
+
     finally:
-        conn.close()
+        if conn:
+            conn.close()

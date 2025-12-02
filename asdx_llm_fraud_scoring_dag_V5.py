@@ -5,7 +5,7 @@ import os
 from airflow import DAG
 from airflow.decorators import task
 from datetime import datetime, timedelta
-from tasks.sql_tasks import check_sql_connection, load_data, save_results, get_conn_str
+from tasks.sql_tasks import check_sql_connection, load_data_from_sql, save_results, get_conn_str
 from tasks.etl_tasks import run_etl_steps
 from tasks.model_tasks import train_model
 from tasks.api_tasks import trigger_api
@@ -39,7 +39,7 @@ with DAG(
 
     conn_ok = check_sql_connection(conn_str)
     # # Step 1: Query SQL Azure
-    base_json = load_data(conn_str, PIPELINE["load_query"])
+    base_json = load_data_from_sql(conn_str, PIPELINE["load_query"])
 
     # # Step 2: ETL Steps
     expanded_json = run_etl_steps(base_json, PIPELINE.get("etl_steps"))
