@@ -1,4 +1,6 @@
 # File: /opt/airflow/dags/rg_detection_dag.py
+import sys
+sys.path.insert(0, "/opt/airflow/dags/repo")
 
 import pendulum
 import json

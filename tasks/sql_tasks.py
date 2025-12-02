@@ -155,8 +155,9 @@ def ensure_results_table(conn_str: str, table_name: str, schema_sql: str, indexe
             logger.info(msg)
 
         logger.info(f"Table {table_name} is ready")
-    finally:
-        conn.close()
+    
     except Exception as e:
         logger.error(f"Failed to create table {table_name}: {e}")
         raise
+    finally:
+        conn.close()
