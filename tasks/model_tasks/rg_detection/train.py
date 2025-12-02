@@ -14,7 +14,7 @@ from catboost import CatBoostClassifier
 logger = get_logger(__name__)
 
 # ĐỔI LẠI ĐÚNG ĐƯỜNG DẪN MÀ FASTAPI ĐANG NHÌN
-MODEL_DIR = "/mnt/models"   # Không có thư mục con /models nữa
+MODEL_DIR = "/mnt/models/models"   # Không có thư mục con /models nữa
 
 
 def train_rg_model(df: pd.DataFrame) -> dict:

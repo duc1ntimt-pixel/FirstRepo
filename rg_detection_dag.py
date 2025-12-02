@@ -1,6 +1,7 @@
 # File: /opt/airflow/dags/rg_detection_dag.py
 
 import pendulum
+import json
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.decorators import task
@@ -13,7 +14,7 @@ from tasks.sql_tasks import (
     get_connection_string,
 )
 from tasks.model_tasks.rg_detection.train import train_rg_model
-from tasks.model_tasks.rg_detection.predict import predict_rg_model  # ← tên hàm đúng
+from tasks.model_tasks.rg_detection.predict import predict_rg_model
 from pipelines.rg_detection import PIPELINE
 from utils.logger import get_logger
 
@@ -49,46 +50,60 @@ with DAG(
         op_kwargs={"conn_str": conn_str, "query": PIPELINE["load_query"]},
     )
 
-    # 3. Train model – dùng @task để dễ truyền DataFrame
+    # 3. Train model – dùng @task
     @task
     def train_task(training_data: list) -> dict:
         import pandas as pd
         df = pd.DataFrame(training_data)
         logger.info(f"Training RG model on {len(df):,} records")
-        return train_rg_model(df)  # ← gọi đúng hàm trong train.py
+        return train_rg_model(df)
 
-    # 4. Inference lại dữ liệu (có thể dùng data mới sau này)
+    # 4. Inference – trả về list[dict]
     @task
-    def predict_task(model_info: dict, raw_data: list):
+    def predict_task(model_info: dict, raw_data: list) -> list[dict]:
         import pandas as pd
         df = pd.DataFrame(raw_data)
         model_type = model_info["model_type"]
         logger.info(f"Running inference with {model_type} on {len(df):,} users")
-        return predict_rg_model(model_type, df)  # ← trả về list[dict] để save
+        return predict_rg_model(model_type, df)
+
+    # 4b. Thêm risk_level
+    @task
+    def add_risk_task(results: list[dict]) -> list[dict]:
+        def map_risk_level(prob: float) -> str:
+            if prob >= 0.8:
+                return 'High'
+            elif prob >= 0.5:
+                return 'Medium'
+            else:
+                return 'Low'
+
+        for row in results:
+            row['risk_level'] = map_risk_level(row['probability'])
+        return results
 
     # 5. Lưu kết quả vào SQL
-    save_results = PythonOperator(
-        task_id="save_results",
-        python_callable=save_results_to_sql,
-        op_kwargs={
-            "conn_str": conn_str,
-            "table_name": PIPELINE["results_table"],
-        },
-    )
+    @task
+    def save_results_task(results: list[dict]):
+        save_results_to_sql(
+            conn_str=conn_str,
+            table_name=PIPELINE["results_table"],
+            results_json=json.dumps(results)
+        )
 
-    # ==================== Dependency ====================
-    ensure_table >> load_data
-
-    trained_model_info = train_task(load_data.output)
-    inference_results = predict_task(trained_model_info, load_data.output)
-
-    save_results.set_upstream(inference_results)
-
-    # Optional: Log model mới
+    # 6. Log model
     @task
     def log_success(model_info: dict):
         logger.info("RG MODEL TRAINING & INFERENCE COMPLETED")
         logger.info(f"Model version: {model_info['model_type']}")
         logger.info(f"F1 Score: {model_info.get('f1_score')}, AUC-PR: {model_info.get('auc_pr')}")
+
+    # ==================== DAG flow ====================
+    ensure_table >> load_data
+
+    trained_model_info = train_task(load_data.output)
+    inference_results = predict_task(trained_model_info, load_data.output)
+    inference_results_with_risk = add_risk_task(inference_results)
+    save_results_task(inference_results_with_risk)
 
     log_success(trained_model_info)

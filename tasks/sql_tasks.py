@@ -1,11 +1,12 @@
 from airflow.decorators import task
-import pyodbc
 import pandas as pd
 import json
 import os, base64
 from airflow.hooks.base import BaseHook
 from utils.logger import get_logger
 import pyodbc
+from typing import Optional, Callable, Dict
+
 logger = get_logger(__name__)
     
 
@@ -153,9 +154,9 @@ def ensure_results_table(conn_str: str, table_name: str, schema_sql: str, indexe
             msg = row[1] if isinstance(row, tuple) else str(row)
             logger.info(msg)
 
-        conn.close()
         logger.info(f"Table {table_name} is ready")
-
+    finally:
+        conn.close()
     except Exception as e:
         logger.error(f"Failed to create table {table_name}: {e}")
         raise
