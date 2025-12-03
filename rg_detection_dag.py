@@ -2,6 +2,7 @@
 import sys
 sys.path.insert(0, "/opt/airflow/dags/repo")
 
+import pyodbc
 import os
 import pandas as pd
 import joblib
@@ -111,6 +112,7 @@ with DAG(
 
     @task()
     def save_results_task(results_json: str):
+        
         df = pd.read_json(results_json)
         with pyodbc.connect(CONN_STR, autocommit=True) as conn:
             cursor = conn.cursor()
