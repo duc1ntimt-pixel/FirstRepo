@@ -40,7 +40,6 @@ with DAG(
         return df.to_json(orient='records')  # small XCom payload
 
     @task()
-    @task()
     def train_model_task(training_json: str):
         import pandas as pd
         from catboost import CatBoostClassifier
