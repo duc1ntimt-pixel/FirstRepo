@@ -9,7 +9,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.metrics import f1_score, average_precision_score
-from catboost import CatBoostClassifier
 
 logger = get_logger(__name__)
 
@@ -18,6 +17,7 @@ MODEL_DIR = "/mnt/models/models"   # Không có thư mục con /models nữa
 
 
 def train_rg_model(df: pd.DataFrame) -> dict:
+    from catboost import CatBoostClassifier
     """
     Train Responsible Gambling (RG) detection model from SQL data.
     Saves both model and preprocessor to shared volume.
