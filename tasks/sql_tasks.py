@@ -9,30 +9,45 @@ from typing import Optional, Callable, Dict
 
 logger = get_logger(__name__)
     
+def get_conn_str() -> str:
+    """
+    Lấy connection string từ environment variables.
+    Dùng cho các task chạy trên worker pod (KubernetesExecutor).
+    """
+    # Lấy từ env – nếu không có thì báo lỗi luôn, không để chạy fail lặng lẽ
+    username = os.getenv("AZURE_SQL_USERNAME")
+    password = os.getenv("AZURE_SQL_PASSWORD")
+    server   = os.getenv("AZURE_SQL_SERVER")
+    database = os.getenv("AZURE_SQL_DATABASE")
+    port = os.getenv("AZURE_SQL_PORT")
+    database = os.getenv("AZURE_SQL_DATABASE")
 
-def get_conn_str():
-    # """Build connection string from environment variables."""
-    # user = os.getenv("SQL_USERNAME")
-    # pwd = os.getenv("SQL_PASSWORD")
-    # server = os.getenv("SQL_SERVER", "sql-ml-ftai-dev.database.windows.net")
-    # db = os.getenv("SQL_DATABASE", "mldb-dev")
-    # driver = "{ODBC Driver 18 for SQL Server}"
-    conn = BaseHook.get_connection("sql_server_fraud")
-    
-    sql_conn = (
-        f"Driver={{ODBC Driver 17 for SQL Server}};"
-        f"Server=tcp:{conn.host},{conn.port or 1433};"
-        f"Database={conn.schema};"
-        f"Uid={conn.login};"
-        f"Pwd={conn.password};"
+    if not all([username, password, server, database]):
+        missing = [k for k, v in {
+            "AZURE_SQL_USERNAME": username,
+            "AZURE_SQL_PASSWORD": password,
+            "AZURE_SQL_SERVER": server,
+            "AZURE_SQL_DATABASE": database
+        }.items() if not v]
+        raise AirflowException(f"Missing SQL env vars: {missing}")
+
+    # Dùng đúng driver 18 (bạn đã cài rồi)
+    conn_str = (
+        f"Driver={{ODBC Driver 18 for SQL Server}};"
+        f"Server=tcp:{server},{port};"
+        f"Database={database};"
+        f"Uid={username};"
+        f"Pwd={password};"
         f"Encrypt=yes;"
-        f"TrustServerCertificate=Yes;"
-        f"Connection Timeout=30;"
+        f"TrustServerCertificate=yes;"
+        f"Connection Timeout=60;"
     )
-    logger.info(f"connectStr={conn}")
-    return (
-        sql_conn
-    )
+
+    # Chỉ log thông tin không nhạy cảm
+    logger.info(f"Connecting to SQL Server: {server}/{database} as {username}")
+    logger.debug(f"Full conn_str (password masked): {conn_str.split('Pwd=')[0]}Pwd=***")
+
+    return conn_str
 
 
 @task()
