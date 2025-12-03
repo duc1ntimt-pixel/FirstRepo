@@ -44,7 +44,7 @@ def get_conn_str() -> str:
     )
 
     # Chỉ log thông tin không nhạy cảm
-    logger.info(f"Connecting to SQL Server: {server}/{database} as {username}")
+    logger.info(f"Connecting to SQL Server: {server}/{database}:{port} as {username}")
     logger.debug(f"Full conn_str (password masked): {conn_str.split('Pwd=')[0]}Pwd=***")
 
     return conn_str
