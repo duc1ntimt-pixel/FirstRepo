@@ -40,8 +40,16 @@ with DAG(
         return df.to_json(orient='records')  # small XCom payload
 
     @task()
+    @task()
     def train_model_task(training_json: str):
+        import pandas as pd
         from catboost import CatBoostClassifier
+        import joblib
+        import os
+        from datetime import datetime
+        from sklearn.preprocessing import StandardScaler
+        from sklearn.compose import ColumnTransformer
+
         df = pd.read_json(training_json)
         df['age'] = datetime.now().year - pd.to_datetime(df['birth_year']).dt.year
         df['account_age_days'] = (pd.Timestamp.now() - pd.to_datetime(df['registration_date'])).dt.days
@@ -71,9 +79,6 @@ with DAG(
         prep_path = os.path.join(MODEL_DIR, f"rg_preprocessor_{ts}.pkl")
         joblib.dump(model, model_path)
         joblib.dump(preprocessor, prep_path)
-
-        logger.info(f"Model saved: {model_path}")
-        logger.info(f"Preprocessor saved: {prep_path}")
 
         return {
             "model_ts": ts,
