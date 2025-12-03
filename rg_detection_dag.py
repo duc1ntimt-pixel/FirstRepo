@@ -5,13 +5,10 @@ sys.path.insert(0, "/opt/airflow/dags/repo")
 import pyodbc
 import os
 import pandas as pd
-import joblib
 from datetime import datetime
 from airflow import DAG
 from airflow.decorators import task
 from tasks.sql_tasks import get_conn_str
-from sklearn.preprocessing import StandardScaler
-from sklearn.compose import ColumnTransformer
 
 import logging
 
@@ -19,12 +16,10 @@ logger = logging.getLogger("airflow.task")
 CONN_STR = get_conn_str()
 MODEL_DIR = "/mnt/models/models"
 os.makedirs(MODEL_DIR, exist_ok=True)
-
 RESULTS_TABLE = "dbo.rg_inference_results"
 
-# ==================== DAG ====================
 with DAG(
-    dag_id="rg_detection_demoV1",
+    dag_id="rg_detection_demoV3",
     start_date=datetime(2025, 1, 1),
     schedule=None,
     catchup=False,
@@ -37,7 +32,8 @@ with DAG(
         with pyodbc.connect(CONN_STR) as conn:
             df = pd.read_sql(query, conn)
         logger.info(f"Loaded {len(df)} training rows")
-        return df.to_json(orient='records')  # small XCom payload
+        # serialize to JSON để XCom-safe
+        return df.to_json(orient="records")
 
     @task()
     def train_model_task(training_json: str):
@@ -57,10 +53,12 @@ with DAG(
         X = df[['feature1','feature2','age','account_age_days']]
         y = df['rg'].astype(int)
 
+        # chỉ chuẩn hóa numeric features
         numeric_features = X.columns.tolist()
         preprocessor = ColumnTransformer([('num', StandardScaler(), numeric_features)])
         X_proc = preprocessor.fit_transform(X)
 
+        # train CatBoost
         scale_pos_weight = (len(y) - y.sum()) / y.sum() if y.sum() > 0 else 1.0
         model = CatBoostClassifier(
             iterations=50,
@@ -79,6 +77,10 @@ with DAG(
         joblib.dump(model, model_path)
         joblib.dump(preprocessor, prep_path)
 
+        logger.info(f"Model saved: {model_path}")
+        logger.info(f"Preprocessor saved: {prep_path}")
+
+        # return chỉ paths + timestamp → XCom-safe
         return {
             "model_ts": ts,
             "model_path": model_path,
@@ -87,9 +89,14 @@ with DAG(
 
     @task()
     def inference_task(model_info: dict):
+        import pandas as pd
+        import joblib
+        from datetime import datetime
+
         query = "SELECT user_id, birth_year, registration_date, feature1, feature2 FROM dbo.training_rg_data"
         with pyodbc.connect(CONN_STR) as conn:
             df = pd.read_sql(query, conn)
+
         df['age'] = datetime.now().year - pd.to_datetime(df['birth_year']).dt.year
         df['account_age_days'] = (pd.Timestamp.now() - pd.to_datetime(df['registration_date'])).dt.days
 
@@ -112,11 +119,12 @@ with DAG(
         df['inference_date'] = datetime.now()
 
         logger.info(f"Inference completed for {len(df)} rows")
-        return df.to_json(orient='records')
+        return df.to_json(orient="records")  # JSON string → XCom-safe
 
     @task()
     def save_results_task(results_json: str):
-        
+        import pandas as pd
+        import pyodbc
         df = pd.read_json(results_json)
         with pyodbc.connect(CONN_STR, autocommit=True) as conn:
             cursor = conn.cursor()
@@ -129,7 +137,7 @@ with DAG(
         logger.info(f"{len(df)} rows saved to {RESULTS_TABLE}")
 
     # ==================== DAG flow ====================
-    data = load_training_data()
-    model_info = train_model_task(data)
+    data_json = load_training_data()
+    model_info = train_model_task(data_json)
     results_json = inference_task(model_info)
     save_results_task(results_json)
