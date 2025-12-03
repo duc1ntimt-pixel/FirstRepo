@@ -52,15 +52,13 @@ def train_task(training_data_json: str) -> dict:
     logger.info(f"Training RG model on {len(df):,} records")
     return train_rg_model(df)
 
-
 @task()
 def predict_task(model_info: dict, raw_data_json: str) -> list[dict]:
     import pandas as pd
     df = pd.read_json(raw_data_json)
-    model_type = model_info["model_type"]
-    logger.info(f"Running inference with {model_type} on {len(df):,} users")
-    return predict_rg_model(model_type, df)
-
+    model_version = model_info["model_version"]
+    logger.info(f"Running inference with {model_version} on {len(df):,} users")
+    return predict_rg_model(model_version, df)
 
 @task()
 def add_risk_task(results: list[dict]) -> list[dict]:
@@ -89,8 +87,7 @@ def save_results_task(results: list[dict]):
 @task()
 def log_success(model_info: dict):
     logger.info("✅ RG MODEL TRAINING & INFERENCE COMPLETED")
-    logger.info(f"Model version: {model_info['model_type']}")
-    logger.info(f"F1 Score: {model_info.get('f1_score')}, AUC-PR: {model_info.get('auc_pr')}")
+    logger.info(f"Model version: {model_info['model_version']}")
 
 
 # ==================== DAG ====================

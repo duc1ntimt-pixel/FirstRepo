@@ -1,23 +1,28 @@
 import joblib
 import pandas as pd
+from catboost import CatBoostClassifier
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 MODEL_DIR = "/mnt/models/models"
 
-def predict_rg_model(model_type: str, df: pd.DataFrame) -> list[dict]:
+def predict_rg_model(model_version: str, df: pd.DataFrame) -> list[dict]:
     if 'user_id' not in df.columns:
         raise KeyError("Input DataFrame must contain 'user_id' column")
     
     try:
-        model_path = f"{MODEL_DIR}/{model_type}.joblib"
-        prep_path = f"{MODEL_DIR}/{model_type}_preprocessor.joblib"
-        model = joblib.load(model_path)
+        model_path = f"{MODEL_DIR}/{model_version}.cbm"
+        prep_path = f"{MODEL_DIR}/{model_version}_prep.joblib"
+
+        # Load model và preprocessor
+        model = CatBoostClassifier()
+        model.load_model(model_path)
         preprocessor = joblib.load(prep_path)
     except Exception as e:
-        logger.exception(f"Failed to load model {model_type}")
+        logger.exception(f"Failed to load model {model_version}")
         raise
 
+    # Transform dữ liệu
     X = preprocessor.transform(df)
     df['rg_prediction'] = model.predict(X)
     df['rg_probability'] = model.predict_proba(X)[:, 1]
