@@ -1,33 +1,9 @@
-# =========================
-# CORE ENVIRONMENT
-# =========================
-python-dotenv==1.0.1           # Load environment variables from .env
-requests==2.32.3               # HTTP requests (for APIs, model serving, etc.)
-flask==3.0.3                   # Lightweight API framework
-flask-cors==4.0.1              # Enable Cross-Origin Resource Sharing
-gunicorn==23.0.0               # Production-grade WSGI server for Flask apps
-
-# =========================
-# DATA MANIPULATION & ANALYSIS
-# =========================
-numpy==1.26.4                  # Numerical computing
-pandas==2.2.3                  # Data manipulation
-scipy==1.14.1                  # Scientific computing utilities
-
-# =========================
-# MACHINE LEARNING / AI
-# =========================
-scikit-learn==1.5.2            # Core ML algorithms (classification, regression, etc.)
-joblib==1.4.2                  # Model serialization
-xgboost==2.1.1                 # Gradient boosting models 150MB
-lightgbm==4.5.0                # Fast gradient boosting (optional alternative)
-catboost==1.2.5                # Gradient boosting with categorical support
-optuna==4.0.0                  # Hyperparameter optimization
-
-# =========================
-# DEEP LEARNING (optional)
-# =========================
-
-# =========================
-# MODEL DEPLOYMENT / SERVING
-# =========================
+pandas==2.2.2
+scikit-learn==1.5.0
+imbalanced-learn==0.12.3
+xgboost==2.0.3
+joblib==1.4.2
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+catboost
+seaborn
