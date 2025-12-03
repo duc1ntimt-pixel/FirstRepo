@@ -1,6 +1,41 @@
-apache-airflow==3.0.0
-pandas
-pyodbc
-scikit-learn
-requests
-catboost
+# =========================
+# CORE ENVIRONMENT
+# =========================
+python-dotenv==1.0.1           # Load environment variables from .env
+requests==2.32.3               # HTTP requests (for APIs, model serving, etc.)
+flask==3.0.3                   # Lightweight API framework
+flask-cors==4.0.1              # Enable Cross-Origin Resource Sharing
+gunicorn==23.0.0               # Production-grade WSGI server for Flask apps
+
+# =========================
+# DATA MANIPULATION & ANALYSIS
+# =========================
+numpy==1.26.4                  # Numerical computing
+pandas==2.2.3                  # Data manipulation
+scipy==1.14.1                  # Scientific computing utilities
+
+# =========================
+# MACHINE LEARNING / AI
+# =========================
+scikit-learn==1.5.2            # Core ML algorithms (classification, regression, etc.)
+joblib==1.4.2                  # Model serialization
+xgboost==2.1.1                 # Gradient boosting models
+lightgbm==4.5.0                # Fast gradient boosting (optional alternative)
+catboost==1.2.5                # Gradient boosting with categorical support
+optuna==4.0.0                  # Hyperparameter optimization
+
+# =========================
+# DEEP LEARNING (optional)
+# =========================
+tensorflow==2.17.0             # Deep learning framework
+torch==2.5.1                   # PyTorch alternative
+torchvision==0.20.1            # PyTorch image utilities
+transformers==4.46.2           # NLP models (BERT, GPT, etc.)
+
+# =========================
+# MODEL DEPLOYMENT / SERVING
+# =========================
+mlflow==2.17.2                 # Experiment tracking and model registry
+fastapi==0.115.2               # Optional: for modern async API design
+uvicorn==0.32.0                # FastAPI server runner
+pydantic==2.9.2                # Data validation (used by FastAPI, optional for Flask)
