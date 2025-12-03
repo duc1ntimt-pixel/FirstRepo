@@ -1,12 +1,12 @@
 import joblib
 import pandas as pd
-from catboost import CatBoostClassifier
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 MODEL_DIR = "/mnt/models/models"
 
 def predict_rg_model(model_version: str, df: pd.DataFrame) -> list[dict]:
+    from catboost import CatBoostClassifier
     if 'user_id' not in df.columns:
         raise KeyError("Input DataFrame must contain 'user_id' column")
     
