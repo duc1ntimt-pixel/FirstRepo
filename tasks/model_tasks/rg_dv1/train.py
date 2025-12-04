@@ -30,12 +30,12 @@ def load_data_from_csv():
     return df_demo, df_gambling, df_rg
 
 def load_data_from_postgre():
-    
     engine = create_engine(db_url)
 
-    df_demo = pd.read_sql("SELECT * FROM demographic", engine)
-    df_gambling = pd.read_sql("SELECT * FROM gambling", engine)
-    df_rg = pd.read_sql("SELECT * FROM rg_information", engine)
+    with engine.connect() as conn:
+        df_demo = pd.read_sql_query("SELECT * FROM demographic", conn)
+        df_gambling = pd.read_sql_query("SELECT * FROM gambling", conn)
+        df_rg = pd.read_sql_query("SELECT * FROM rg_information", conn)
 
     return df_demo, df_gambling, df_rg
 
