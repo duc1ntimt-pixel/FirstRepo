@@ -49,6 +49,73 @@ def get_conn_str() -> str:
 
     return conn_str
 
+def get_PostgreSQL_conn_params() -> Dict[str, str]:
+    """
+    Trả về dict param phù hợp cho psycopg2.connect(**params).
+    Giữ nguyên tên env AZURE_SQL_...
+    """
+    username = os.getenv("AZURE_SQL_USERNAME")
+    password = os.getenv("AZURE_SQL_PASSWORD")
+    server   = os.getenv("AZURE_SQL_SERVER")
+    port     = os.getenv("AZURE_SQL_PORT", "5432")
+    database = os.getenv("AZURE_SQL_DATABASE")
+
+    if not all([username, password, server, database]):
+        missing = [k for k, v in {
+            "AZURE_SQL_USERNAME": username,
+            "AZURE_SQL_PASSWORD": password,
+            "AZURE_SQL_SERVER": server,
+            "AZURE_SQL_DATABASE": database
+        }.items() if not v]
+        raise AirflowException(f"Missing SQL env vars: {missing}")
+
+    params = {
+        "host": server,
+        "port": int(port),
+        "dbname": database,
+        "user": username,
+        "password": password,
+        # optional: connect timeout
+        "connect_timeout": 10
+    }
+
+    logger.info(f"Connecting to PostgreSQL: {server}/{database}:{port} as {username}")
+    # mask password in debug
+    safe = params.copy()
+    safe["password"] = "***"
+    logger.debug(f"Conn params (masked): {safe}")
+    return params
+    
+def get_PostgreSQL_conn_str() -> str:
+    """
+    Lấy PostgreSQL connection string từ các environment variables cũ:
+    AZURE_SQL_USERNAME, AZURE_SQL_PASSWORD, AZURE_SQL_SERVER, AZURE_SQL_PORT, AZURE_SQL_DATABASE
+    """
+
+    username = os.getenv("AZURE_SQL_USERNAME")
+    password = os.getenv("AZURE_SQL_PASSWORD")
+    server   = os.getenv("AZURE_SQL_SERVER")
+    port     = os.getenv("AZURE_SQL_PORT", "5432")
+    database = os.getenv("AZURE_SQL_DATABASE")
+
+    if not all([username, password, server, database]):
+        missing = [k for k, v in {
+            "AZURE_SQL_USERNAME": username,
+            "AZURE_SQL_PASSWORD": password,
+            "AZURE_SQL_SERVER": server,
+            "AZURE_SQL_DATABASE": database
+        }.items() if not v]
+        raise AirflowException(f"Missing SQL env vars: {missing}")
+
+    # Connection string PostgreSQL dạng URI (cho SQLAlchemy + psycopg2)
+    conn_str = f"postgresql+psycopg2://{username}:{password}@{server}:{port}/{database}"
+
+    # Log không show password
+    logger.info(f"Connecting to PostgreSQL: {server}/{database}:{port} as {username}")
+    safe_conn_str = conn_str.replace(password, "***")
+    logger.debug(f"Full conn_str (password masked): {safe_conn_str}")
+
+    return conn_str
 
 @task()
 def check_sql_connection(conn_str=None):
