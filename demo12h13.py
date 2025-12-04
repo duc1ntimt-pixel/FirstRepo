@@ -72,20 +72,14 @@ with DAG(
         LOCAL_DIR  = Variable.get("LOCAL_DIR")
         GIT_USER  = Variable.get("GIT_USER")
         GIT_EMAIL = Variable.get("GIT_EMAIL")
-        GIT_TOKEN = Variable.get("GIT_TOKEN", default_var=None)
-
+        GIT_TOKEN = Variable.get("GIT_TOKEN")
+        
         # Xóa folder cũ nếu có
         if os.path.exists(LOCAL_DIR):
             subprocess.run(["rm", "-rf", LOCAL_DIR], check=True)
-
-        subprocess.run([
-            "git",
-            "-c",
-            f'http.extraheader="AUTHORIZATION: Basic {GIT_TOKEN}"',
-            "clone",
-            GIT_REPO,
-            LOCAL_DIR
-        ], check=True)
+        cmd = f'git -c http.extraheader="AUTHORIZATION: Basic {GIT_TOKEN}" clone {GIT_REPO} {LOCAL_DIR}'
+        print(cmd)
+        subprocess.run(cmd, shell=True, check=True)
 
         # Đường dẫn file deploy.md
         deploy_file = os.path.join(LOCAL_DIR, "deploy.md")
