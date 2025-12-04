@@ -65,7 +65,7 @@ with DAG(
             conn.close()  # luôn đóng kết nối
 
         return df_demo, df_gambling, df_rg
-    
+
     @task
     def trigger_gits():
         GIT_REPO  = Variable.get("GIT_REPO")
@@ -99,7 +99,8 @@ with DAG(
         subprocess.run(["git", "config", "user.email", GIT_EMAIL], cwd=LOCAL_DIR, check=True)
         subprocess.run(["git", "add", "deploy.md"], cwd=LOCAL_DIR, check=True)
         subprocess.run(["git", "commit", "-m", f"Update deploy.md {tag.strip()}"], cwd=LOCAL_DIR, check=True)
-        subprocess.run(["git", "push"], cwd=LOCAL_DIR, check=True)
+        push_cmd = f'git -c http.extraheader="AUTHORIZATION: Basic {GIT_TOKEN}" push {GIT_REPO}'
+        subprocess.run(push_cmd, shell=True, check=True)
 
     @task
     def wait_api():
