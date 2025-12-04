@@ -81,7 +81,7 @@ with DAG(
         # Clone repo
         clone_url = GIT_REPO
         if GIT_TOKEN:  # dùng token nếu repo private
-            clone_url = GIT_REPO.replace("https://", f"https://{GIT_TOKEN}@")
+            clone_url = GIT_REPO.replace("https://", f"https://{GIT_USER}:{GIT_TOKEN}@")
         subprocess.run(["git", "clone", clone_url, LOCAL_DIR], check=True)
 
         # Đường dẫn file deploy.md
