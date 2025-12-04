@@ -73,7 +73,8 @@ with DAG(
         GIT_USER  = Variable.get("GIT_USER")
         GIT_EMAIL = Variable.get("GIT_EMAIL")
         GIT_TOKEN = Variable.get("GIT_TOKEN")
-
+        print(GIT_USER)
+        print(GIT_EMAIL)
         print(f"[INFO] Start trigger_gits task")
 
         # Xóa folder cũ nếu có
