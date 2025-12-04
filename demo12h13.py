@@ -84,12 +84,17 @@ with DAG(
             print(f"[INFO] No existing folder, skip remove")
 
         # Clone repo
+
         print(f"[INFO] Cloning repo: {GIT_REPO} to {LOCAL_DIR}")
         cmd = f'git -c http.extraheader="AUTHORIZATION: Basic {GIT_TOKEN}" clone {GIT_REPO} {LOCAL_DIR}'
         print(f"[CMD] {cmd}")
-        subprocess.run(cmd, shell=True, check=True)
-        print(f"[INFO] Clone completed")
-
+        try:
+            subprocess.run(cmd, shell=True, check=True)
+            print("[INFO] Clone completed")
+        except subprocess.CalledProcessError as e:
+            print(f"[ERROR] Clone failed: {e}")
+            return  # dừng task nếu clone không thành công
+        
         # Đường dẫn file deploy.md
         deploy_file = os.path.join(LOCAL_DIR, "deploy.md")
 
