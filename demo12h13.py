@@ -138,10 +138,45 @@ with DAG(
         subprocess.run(["git", "commit", "-m", f"Update deploy.md {tag.strip()}"], cwd=LOCAL_DIR, check=True)
 
         print(f"[INFO] Pushing changes to repo")
-        push_cmd = ["git", "push", "origin", "main"]
-        # push_cmd = f'git -c http.extraheader="AUTHORIZATION: Basic {GIT_TOKEN}" push {GIT_REPO}'
-        print(f"[CMD] {push_cmd}")
-        subprocess.run(push_cmd, shell=True, check=True, cwd=LOCAL_DIR)
+        try:
+            push_cmd = f'git -c http.extraheader="AUTHORIZATION: Basic {GIT_TOKEN}" push {GIT_REPO}'
+            push_result = subprocess.run(push_cmd, shell=True, check=True, cwd=LOCAL_DIR)
+            print(f"[INFO] Push completed successfully")
+            print(f"[DEBUG] Push output: {push_result.stdout[:200]}...")
+    except subprocess.CalledProcessError as e:
+
+        print(f"[ERROR] Push failed: {e}")
+        print(f"[ERROR] Push stderr: {e.stderr}")
+        
+        # Thử push với credentials trong URL
+        print("[INFO] Trying push with credentials in URL...")
+        
+        # Lấy remote URL
+        remote_url_result = subprocess.run(
+            ["git", "remote", "get-url", "origin"], 
+            cwd=LOCAL_DIR,
+            capture_output=True,
+            text=True
+        )
+        remote_url = remote_url_result.stdout.strip()
+        
+        # Thêm credentials vào URL
+        if remote_url.startswith("https://"):
+            push_url = remote_url.replace(
+                "https://",
+                f"https://{GIT_USER}:{encoded_token}@"
+            )
+            push_cmd = ["git", "push", push_url, current_branch]
+            print(f"[DEBUG] Push command with credentials: {' '.join(push_cmd[:3])}...")
+            
+            try:
+                subprocess.run(push_cmd, cwd=LOCAL_DIR, check=True)
+                print(f"[INFO] Push with credentials completed successfully")
+            except subprocess.CalledProcessError as e2:
+                print(f"[ERROR] Still failed: {e2}")
+                print(f"[ERROR] Error details: {e2.stderr}")
+                raise
+
         print(f"[INFO] Push completed")
 
     @task
