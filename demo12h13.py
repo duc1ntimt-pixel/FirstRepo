@@ -8,6 +8,8 @@ import pandas as pd
 from sqlalchemy import create_engine
 from tasks.sql_tasks import get_PostgreSQL_conn_params
 import logging
+from sqlalchemy.engine import make_url
+
 logger = logging.getLogger("airflow.task")
 from tasks.model_tasks.rg_dv1.train import load_and_insert
 POSTGRES_CONFIG = get_PostgreSQL_conn_params()
@@ -38,10 +40,16 @@ with DAG(
 
     @task
     def load_data_from_postgre():
+        url = make_url("postgresql+psycopg2://")  # base
+        url = url.set(
+            username=POSTGRES_CONFIG['user'],
+            password=POSTGRES_CONFIG['password'], 
+            host=POSTGRES_CONFIG['host'],
+            port=POSTGRES_CONFIG['port'],
+            database=POSTGRES_CONFIG['dbname']
+        )
+        engine = create_engine(url)
         
-        db_url = f"postgresql+psycopg2://{POSTGRES_CONFIG['user']}:{POSTGRES_CONFIG['password']}@{POSTGRES_CONFIG['host']}:{POSTGRES_CONFIG['port']}/{POSTGRES_CONFIG['dbname']}"
-        engine = create_engine(db_url)
-
         with engine.connect() as conn:
             df_demo = pd.read_sql_query("SELECT * FROM demographic", conn)
             df_gambling = pd.read_sql_query("SELECT * FROM gambling", conn)
