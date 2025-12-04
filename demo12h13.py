@@ -141,15 +141,15 @@ with DAG(
         try:
             # git -c http.extraheader="AUTHORIZATION: Basic SU1ULVNPRlRcaHV5bHQ6dzM2a3h6anJoZTczand0bGVtN3BkY2VmZ3hrazZ2M2g1ZXBremVrM2lqaHNhcDJmajVjYQ==" push origin main
             auth_header = f"AUTHORIZATION: Basic {GIT_TOKEN}"
-            cmd = ["git", "-c", f'http.extraheader={auth_header}', "push", GIT_REPO]
+            cmd = ["git", "-c", f'http.extraheader={auth_header}', "push", "push", "origin", "main", GIT_REPO]
             print(cmd)
             subprocess.run(cmd, cwd=LOCAL_DIR, check=True)
             print(f"[INFO] Push 1 try successfully")
 
-            push_cmd = f'git -c http.extraheader="AUTHORIZATION: Basic {GIT_TOKEN}" push {GIT_REPO}'
-            push_result = subprocess.run(push_cmd, shell=True, check=True, cwd=LOCAL_DIR)
-            print(f"[INFO] Push completed successfully")
-            print(f"[DEBUG] Push output: {push_result.stdout[:200]}...")
+            # push_cmd = f'git -c http.extraheader="AUTHORIZATION: Basic {GIT_TOKEN}" push {GIT_REPO}'
+            # push_result = subprocess.run(push_cmd, shell=True, check=True, cwd=LOCAL_DIR)
+            # print(f"[INFO] Push completed successfully")
+            # print(f"[DEBUG] Push output: {push_result.stdout[:200]}...")
         except subprocess.CalledProcessError as e:
 
             print(f"[ERROR] Push failed: {e}")
