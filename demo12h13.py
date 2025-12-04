@@ -291,9 +291,10 @@ with DAG(
             return None
     
     @task
-    def save_data(rq):
-        data = rq.json()
-
+    def save_data(data):
+        if data is None:
+            print("[WARNING] No data to save, skipping task.")
+            return "No data to save"
         # 2. Kết nối PostgreSQL
         conn = psycopg2.connect(**POSTGRES_CONFIG)
         cur = conn.cursor()
