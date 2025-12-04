@@ -46,26 +46,129 @@ with DAG(
             raise e
 
     @task
-    def load_data_from_postgre():
-    # Dùng đúng cái đã test thành công ở task đầu
+    def load_data_from_postgre(dag_run=None):
         conn = psycopg2.connect(**POSTGRES_CONFIG)
-        
+        user_id = dag_run.conf.get("user_id", 1)
         try:
             # Dùng pandas + psycopg2 connection → 100% không lỗi cursor
-            df_demo     = pd.read_sql("SELECT * FROM demographic",     conn)
-            df_gambling = pd.read_sql("SELECT * FROM gambling",        conn)
-            df_rg       = pd.read_sql("SELECT * FROM rg_information",  conn)
-
-            print("LOAD THÀNH CÔNG 100% bằng psycopg2 + pandas!")
-            print(f"demographic:     {df_demo.shape}")
-            print(f"gambling:        {df_gambling.shape}")
-            print(f"rg_information:  {df_rg.shape}")
+            df_demo     = pd.read_sql("SELECT * FROM demographi WHERE user_id = {user_id}",     conn)
+            df_gambling = pd.read_sql("SELECT * FROM gambling WHERE user_id = {user_id}",        conn)
+            df_rg       = pd.read_sql("SELECT * FROM rg_information WHERE user_id = {user_id}",  conn)
 
         finally:
             conn.close()  # luôn đóng kết nối
 
-        return df_demo, df_gambling, df_rg
+        if df_demo.empty:
+            raise ValueError("❌ User not found in demographic table")
+        # -----------------------------
+        # 2. Convert dates
+        # -----------------------------
+        df_demo['registration_date'] = pd.to_datetime(df_demo['registration_date'], errors='coerce')
+        df_gambling['date'] = pd.to_datetime(df_gambling['date'], errors='coerce')
 
+        # -----------------------------
+        # 3. RG label
+        # -----------------------------
+        df_demo['rg'] = 1 if not df_rg.empty else 0
+
+        # -----------------------------
+        # 4. Gambling aggregation
+        # -----------------------------
+        if df_gambling.empty:
+            # if no gambling data, set zeros
+            feature_dict = {
+                "user_id": user_id,
+                "country": df_demo['country'].iloc[0],
+                "language": df_demo['language'].iloc[0],
+                "gender": df_demo['gender'].iloc[0],
+                "age": datetime.now().year - df_demo['birth_year'].iloc[0],
+                "account_age_days": 0,
+                "total_turnover": 0,
+                "mean_turnover": 0,
+                "total_hold": 0,
+                "mean_hold": 0,
+                "total_bets": 0,
+                "mean_bets": 0,
+                "days_active": 0,
+                "days_since_last_bet": 0,
+                "rolling_7d_std_turnover": 0,
+                "rolling_7d_std_hold": 0,
+                "rolling_7d_std_num_bets": 0,
+                "rolling_30d_std_turnover": 0,
+                "rolling_30d_std_hold": 0,
+                "rolling_30d_std_num_bets": 0,
+                "rolling_7d_mean_turnover": 0,
+                "rolling_7d_mean_hold": 0,
+                "rolling_7d_mean_num_bets": 0,
+                "rolling_30d_mean_turnover": 0,
+                "rolling_30d_mean_hold": 0,
+                "rolling_30d_mean_num_bets": 0
+            }
+            return feature_dict
+
+        # Continue if data exists
+        df_gambling = df_gambling.sort_values("date")
+
+        df_agg = df_gambling.agg({
+            "turnover": ["sum", "mean"],
+            "hold": ["sum", "mean"],
+            "num_bets": ["sum", "mean"]
+        })
+
+        df_agg.columns = ["total_turnover", "mean_turnover",
+                        "total_hold", "mean_hold",
+                        "total_bets", "mean_bets"]
+
+        first_bet = df_gambling["date"].min()
+        last_bet = df_gambling["date"].max()
+        latest_date = last_bet  # local feature only
+
+        days_active = (last_bet - first_bet).days + 1
+        days_since_last = (latest_date - last_bet).days
+
+        # -----------------------------
+        # 5. Rolling windows
+        # -----------------------------
+        df_rolling = df_gambling.set_index("date")[["turnover", "hold", "num_bets"]]
+
+        def roll_feature(window):
+            x = df_rolling.rolling(f"{window}D")
+            return {
+                f"rolling_{window}d_std_turnover": x["turnover"].std().mean(),
+                f"rolling_{window}d_std_hold": x["hold"].std().mean(),
+                f"rolling_{window}d_std_num_bets": x["num_bets"].std().mean(),
+                f"rolling_{window}d_mean_turnover": x["turnover"].mean().mean(),
+                f"rolling_{window}d_mean_hold": x["hold"].mean().mean(),
+                f"rolling_{window}d_mean_num_bets": x["num_bets"].mean().mean(),
+            }
+
+        f7 = roll_feature(7)
+        f30 = roll_feature(30)
+        age = df_gambling['date'].max().year - df_demo['birth_year'].iloc[0]
+
+        # -----------------------------
+        # 6. Combine to final dict
+        # -----------------------------
+        feature_dict = {
+            "user_id": user_id,
+            "country": df_demo['country'].iloc[0],
+            "language": df_demo['language'].iloc[0],
+            "gender": df_demo['gender'].iloc[0],
+            "age": age,
+            "account_age_days": (latest_date - df_demo['registration_date'].iloc[0]).days,
+            "total_turnover": df_agg["total_turnover"],
+            "mean_turnover": df_agg["mean_turnover"],
+            "total_hold": df_agg["total_hold"],
+            "mean_hold": df_agg["mean_hold"],
+            "total_bets": df_agg["total_bets"],
+            "mean_bets": df_agg["mean_bets"],
+            "days_active": days_active,
+            "days_since_last_bet": days_since_last,
+            **f7,
+            **f30
+        }
+
+        return feature_dict
     @task
     def trigger_gits():
         GIT_REPO  = Variable.get("GIT_REPO")
@@ -77,12 +180,6 @@ with DAG(
         GIT_PASS_PUSH = Variable.get("GIT_PASS_PUSH")
         print(GIT_USER_PUSH)
         print(GIT_PASS_PUSH)
-        os.environ["GIT_ASKPASS"] = "/bin/echo"  # Git gọi để lấy password
-        os.environ["GIT_USERNAME"] = GIT_USER_PUSH
-        os.environ["GIT_PASSWORD"] = GIT_PASS_PUSH
-
-        subprocess.run(["git", "config", "credential.helper", "store"], cwd=LOCAL_DIR, check=True)
-
         print(GIT_USER)
         print(GIT_EMAIL)
         print(f"[INFO] Start trigger_gits task")
@@ -147,38 +244,43 @@ with DAG(
         print(f"[INFO] Committing changes")
         subprocess.run(["git", "commit", "-m", f"Update deploy.md {tag.strip()}"], cwd=LOCAL_DIR, check=True)
 
+        os.environ["GIT_ASKPASS"] = "/bin/echo"
+        os.environ["GIT_USERNAME"] = GIT_USER_PUSH
+        os.environ["GIT_PASSWORD"] = GIT_PASS_PUSH
+        subprocess.run(["git", "config", "credential.helper", "store"], cwd=LOCAL_DIR, check=True)
+
+        # Push
         print(f"[INFO] Pushing changes to repo")
         try:
-            # auth_header = f"AUTHORIZATION: Basic {GIT_TOKEN}"
-            # cmd = ["git", "-c", f'http.extraheader={auth_header}', "push", "origin", "main", GIT_REPO]
-            # print(cmd)
             subprocess.run(["git", "push", "origin", "main"], cwd=LOCAL_DIR, check=True)
-            # subprocess.run(cmd, cwd=LOCAL_DIR, check=True)
-            print(f"[INFO] Push 1 try successfully")
-
-            # push_cmd = f'git -c http.extraheader="AUTHORIZATION: Basic {GIT_TOKEN}" push {GIT_REPO}'
-            # push_result = subprocess.run(push_cmd, shell=True, check=True, cwd=LOCAL_DIR)
-            # print(f"[INFO] Push completed successfully")
-            # print(f"[DEBUG] Push output: {push_result.stdout[:200]}...")
+            print(f"[INFO] Push completed successfully")
         except subprocess.CalledProcessError as e:
-
             print(f"[ERROR] Push failed: {e}")
-            print(f"[ERROR] Push stderr: {e.stderr}")
-
-        print(f"[INFO] Push completed")
 
     @task
     def wait_api():
         return ""
     @task
-    def call_api():
-        return ""
+    def call_api(feature_dict):
+        url = "http://192.168.100.117:32053/predict"
+        headers = {"accept": "application/json", "Content-Type": "application/json"}
+
+        # Gọi API
+        try:
+            response = requests.post(url, headers=headers, json=feature_dict)
+            response.raise_for_status()
+            result = response.json()
+            print(f"[INFO] API response: {result}")
+            return result
+        except requests.RequestException as e:
+            print(f"[ERROR] API call failed: {e}")
+            return None
     
-    @task 
+    @task
     def save_data():
         return ""
 
-  
-    trigger_gits()
+    t1 = load_data_from_postgre()
+    t2 = call_api(t1)
 
 
