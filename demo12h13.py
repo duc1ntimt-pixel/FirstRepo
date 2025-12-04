@@ -82,7 +82,7 @@ with DAG(
             [
                 "git",
                 "-c",
-                f"http.extraheader=AUTHORIZATION: Basic {GIT_TOKEN}",
+                f'http.extraheader="AUTHORIZATION: Basic {GIT_TOKEN}"',
                 "clone",
                 GIT_REPO,
                 LOCAL_DIR
