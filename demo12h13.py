@@ -13,6 +13,8 @@ from tasks.sql_tasks import get_PostgreSQL_conn_params
 import logging
 from sqlalchemy.engine import make_url
 logger = logging.getLogger("airflow.task")
+import requests
+import json
 from tasks.model_tasks.rg_dv1.train import load_and_insert
 POSTGRES_CONFIG = get_PostgreSQL_conn_params()
 
