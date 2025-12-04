@@ -147,35 +147,6 @@ with DAG(
 
             print(f"[ERROR] Push failed: {e}")
             print(f"[ERROR] Push stderr: {e.stderr}")
-            
-            # Thử push với credentials trong URL
-            print("[INFO] Trying push with credentials in URL...")
-            
-            # Lấy remote URL
-            remote_url_result = subprocess.run(
-                ["git", "remote", "get-url", "origin"], 
-                cwd=LOCAL_DIR,
-                capture_output=True,
-                text=True
-            )
-            remote_url = remote_url_result.stdout.strip()
-            
-            # Thêm credentials vào URL
-            if remote_url.startswith("https://"):
-                push_url = remote_url.replace(
-                    "https://",
-                    f"https://{GIT_USER}:{encoded_token}@"
-                )
-                push_cmd = ["git", "push", push_url, current_branch]
-                print(f"[DEBUG] Push command with credentials: {' '.join(push_cmd[:3])}...")
-                
-                try:
-                    subprocess.run(push_cmd, cwd=LOCAL_DIR, check=True)
-                    print(f"[INFO] Push with credentials completed successfully")
-                except subprocess.CalledProcessError as e2:
-                    print(f"[ERROR] Still failed: {e2}")
-                    print(f"[ERROR] Error details: {e2.stderr}")
-                    raise
 
         print(f"[INFO] Push completed")
 
