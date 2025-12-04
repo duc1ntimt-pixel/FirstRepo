@@ -111,6 +111,14 @@ with DAG(
         else:
             print(f"[INFO] deploy.md exists, append log")
 
+        files = os.listdir(LOCAL_DIR)
+        if files:
+            print(f"[INFO] Clone check OK, các file/folder trong repo:")
+            for f in files:
+                print(f" - {f}")
+        else:
+            print(f"[WARNING] Repo đã clone nhưng trống")
+
         # Thêm tag ngày giờ
         tag = datetime.now().strftime("Deploy at %Y-%m-%d %H:%M:%S\n")
         with open(deploy_file, "a") as f:
