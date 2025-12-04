@@ -66,13 +66,8 @@ with DAG(
 
         return df_demo, df_gambling, df_rg
 
-   @task
+    @task
     def trigger_gits():
-        import os
-        import subprocess
-        from datetime import datetime
-        from airflow.sdk import Variable
-
         GIT_REPO  = Variable.get("GIT_REPO")
         LOCAL_DIR  = Variable.get("LOCAL_DIR")
         GIT_USER  = Variable.get("GIT_USER")
