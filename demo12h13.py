@@ -11,15 +11,6 @@ logger = logging.getLogger("airflow.task")
 from tasks.model_tasks.rg_dv1.train import load_and_insert
 POSTGRES_CONFIG = get_PostgreSQL_conn_params()
 
-# POSTGRES_CONFIG = {
-#     "host": "192.xx.xx.117",
-#     "port": 30079,
-#     "dbname": "postgres_db",
-#     "user": "postgres",
-#     "password": "aiteam%xxx",
-# }
-
-
 with DAG(
     dag_id="demo12h13",
     start_date=datetime(2023, 1, 1),
