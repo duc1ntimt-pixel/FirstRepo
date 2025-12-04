@@ -27,6 +27,7 @@ with DAG(
             cur = conn.cursor()
             cur.execute("SELECT version();")
             version = cur.fetchone()[0]
+            print("PostgreSQL version:", POSTGRES_CONFIG)
             print("PostgreSQL version:", version)
             cur.close()
             conn.close()
