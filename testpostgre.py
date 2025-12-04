@@ -21,9 +21,9 @@ POSTGRES_CONFIG = get_PostgreSQL_conn_params()
 
 
 with DAG(
-    dag_id="test_postgres_connection",
+    dag_id="test_postgres_connection2",
     start_date=datetime(2023, 1, 1),
-    schedule_interval=None,
+    schedule=None,   # ← đúng chuẩn Airflow 3.x
     catchup=False,
     tags=["test"],
 ):
