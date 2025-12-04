@@ -66,41 +66,68 @@ with DAG(
 
         return df_demo, df_gambling, df_rg
 
-    @task
+   @task
     def trigger_gits():
+        import os
+        import subprocess
+        from datetime import datetime
+        from airflow.sdk import Variable
+
         GIT_REPO  = Variable.get("GIT_REPO")
         LOCAL_DIR  = Variable.get("LOCAL_DIR")
         GIT_USER  = Variable.get("GIT_USER")
         GIT_EMAIL = Variable.get("GIT_EMAIL")
         GIT_TOKEN = Variable.get("GIT_TOKEN")
-        
+
+        print(f"[INFO] Start trigger_gits task")
+
         # Xóa folder cũ nếu có
         if os.path.exists(LOCAL_DIR):
+            print(f"[INFO] Removing existing folder: {LOCAL_DIR}")
             subprocess.run(["rm", "-rf", LOCAL_DIR], check=True)
+        else:
+            print(f"[INFO] No existing folder, skip remove")
+
+        # Clone repo
+        print(f"[INFO] Cloning repo: {GIT_REPO} to {LOCAL_DIR}")
         cmd = f'git -c http.extraheader="AUTHORIZATION: Basic {GIT_TOKEN}" clone {GIT_REPO} {LOCAL_DIR}'
-        print(cmd)
+        print(f"[CMD] {cmd}")
         subprocess.run(cmd, shell=True, check=True)
+        print(f"[INFO] Clone completed")
 
         # Đường dẫn file deploy.md
         deploy_file = os.path.join(LOCAL_DIR, "deploy.md")
 
         # Nếu không có thì tạo mới
         if not os.path.exists(deploy_file):
+            print(f"[INFO] Creating deploy.md")
             with open(deploy_file, "w") as f:
                 f.write("# Deploy Log\n\n")
+        else:
+            print(f"[INFO] deploy.md exists, append log")
 
         # Thêm tag ngày giờ
         tag = datetime.now().strftime("Deploy at %Y-%m-%d %H:%M:%S\n")
         with open(deploy_file, "a") as f:
             f.write(tag)
+        print(f"[INFO] Tag added to deploy.md: {tag.strip()}")
 
         # Commit & Push
+        print(f"[INFO] Config git user")
         subprocess.run(["git", "config", "user.name", GIT_USER], cwd=LOCAL_DIR, check=True)
         subprocess.run(["git", "config", "user.email", GIT_EMAIL], cwd=LOCAL_DIR, check=True)
+
+        print(f"[INFO] Adding deploy.md to git")
         subprocess.run(["git", "add", "deploy.md"], cwd=LOCAL_DIR, check=True)
+
+        print(f"[INFO] Committing changes")
         subprocess.run(["git", "commit", "-m", f"Update deploy.md {tag.strip()}"], cwd=LOCAL_DIR, check=True)
+
+        print(f"[INFO] Pushing changes to repo")
         push_cmd = f'git -c http.extraheader="AUTHORIZATION: Basic {GIT_TOKEN}" push {GIT_REPO}'
+        print(f"[CMD] {push_cmd}")
         subprocess.run(push_cmd, shell=True, check=True)
+        print(f"[INFO] Push completed")
 
     @task
     def wait_api():
@@ -113,9 +140,7 @@ with DAG(
     def save_data():
         return ""
 
-    # t1 = test_connection()
-    # t2 = load_data_from_postgre()
+  
     trigger_gits()
-    # t1 >> t2
 
 
