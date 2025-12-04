@@ -280,7 +280,7 @@ with DAG(
         # Gọi API
         try:
             feature_dict = convert_numpy_to_python(feature_dict)
-            
+
             response = requests.post(url, headers=headers, json=feature_dict)
             response.raise_for_status()
             result = response.json()
@@ -291,10 +291,31 @@ with DAG(
             return None
     
     @task
-    def save_data():
-        return ""
+    def save_data(rq):
+        data = rq.json()
+
+        # 2. Kết nối PostgreSQL
+        conn = psycopg2.connect(**POSTGRES_CONFIG)
+        cur = conn.cursor()
+
+        # 3. Chuẩn bị chèn dữ liệu
+        cols = ', '.join(data.keys())
+        vals_placeholders = ', '.join(['%s'] * len(data))
+        sql = f"INSERT INTO user_analysis ({cols}) VALUES ({vals_placeholders})"
+
+        # 4. Thực thi
+        cur.execute(sql, list(data.values()))
+        conn.commit()
+
+        # 5. Đóng kết nối
+        cur.close()
+        conn.close()
+
+        return f"Inserted user_id={data.get('user_id')} successfully"
 
     t1 = load_data_from_postgre()
     t2 = call_api(t1)
+    t3 = save_data(t2)
 
+t1 >> t2 >> t3
 
