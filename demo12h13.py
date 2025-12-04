@@ -48,10 +48,10 @@ with DAG(
     @task
     def load_data_from_postgre(dag_run=None):
         conn = psycopg2.connect(**POSTGRES_CONFIG)
-        user_id = dag_run.conf.get("user_id", 1)
+        user_id = dag_run.conf.get("user_id", 9822065)
         try:
             # Dùng pandas + psycopg2 connection → 100% không lỗi cursor
-            df_demo = pd.read_sql("SELECT * FROM demographi WHERE user_id = %s", conn, params=(user_id,))
+            df_demo = pd.read_sql("SELECT * FROM demographic WHERE user_id = %s", conn, params=(user_id,))
             df_gambling = pd.read_sql("SELECT * FROM gambling WHERE user_id = %s", conn, params=(user_id,))
             df_rg = pd.read_sql("SELECT * FROM rg_information WHERE user_id = %s", conn, params=(user_id,))
 
