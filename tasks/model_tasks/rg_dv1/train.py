@@ -18,7 +18,7 @@ logger = logging.getLogger("airflow.task")
 
 db_url =get_PostgreSQL_conn_str()
 def load_data_from_csv():
-    base = "/opt/airflow/dags/repo/tasks/model_tasks/rg_dv1/data"
+    base = "/opt/airflow/dags/repo/tasks/model_tasks/rg_dv1/data/"
     df_demo = pd.read_csv(base + 'demographic.csv').head(10)
     df_gambling = pd.read_csv(base + 'gambling.csv').head(10)
     df_rg = pd.read_csv(base + 'rg_information.csv').head(10)
