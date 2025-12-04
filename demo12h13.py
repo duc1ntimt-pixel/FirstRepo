@@ -73,6 +73,15 @@ with DAG(
         GIT_USER  = Variable.get("GIT_USER")
         GIT_EMAIL = Variable.get("GIT_EMAIL")
         GIT_TOKEN = Variable.get("GIT_TOKEN")
+        GIT_USER_PUSH = Variable.get("GIT_USER_PUSH")
+        GIT_PASS_PUSH = Variable.get("GIT_PASS_PUSH")
+
+        os.environ["GIT_ASKPASS"] = "/bin/echo"  # Git gọi để lấy password
+        os.environ["GIT_USERNAME"] = GIT_USER_PUSH
+        os.environ["GIT_PASSWORD"] = GIT_PASS_PUSH
+
+        subprocess.run(["git", "config", "credential.helper", "store"], cwd=LOCAL_DIR, check=True)
+
         print(GIT_USER)
         print(GIT_EMAIL)
         print(f"[INFO] Start trigger_gits task")
@@ -139,10 +148,11 @@ with DAG(
 
         print(f"[INFO] Pushing changes to repo")
         try:
-            auth_header = f"AUTHORIZATION: Basic {GIT_TOKEN}"
-            cmd = ["git", "-c", f'http.extraheader={auth_header}', "push", "origin", "main", GIT_REPO]
-            print(cmd)
-            subprocess.run(cmd, cwd=LOCAL_DIR, check=True)
+            # auth_header = f"AUTHORIZATION: Basic {GIT_TOKEN}"
+            # cmd = ["git", "-c", f'http.extraheader={auth_header}', "push", "origin", "main", GIT_REPO]
+            # print(cmd)
+            subprocess.run(["git", "push", "origin", "main"], cwd=LOCAL_DIR, check=True)
+            # subprocess.run(cmd, cwd=LOCAL_DIR, check=True)
             print(f"[INFO] Push 1 try successfully")
 
             # push_cmd = f'git -c http.extraheader="AUTHORIZATION: Basic {GIT_TOKEN}" push {GIT_REPO}'
