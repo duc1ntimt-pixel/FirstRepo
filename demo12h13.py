@@ -12,6 +12,7 @@ logger = logging.getLogger("airflow.task")
 from tasks.model_tasks.rg_dv1.train import load_and_insert
 POSTGRES_CONFIG = get_PostgreSQL_conn_params()
 
+# V1.1
 with DAG(
     dag_id="Demo",
     start_date=datetime(2023, 1, 1),
@@ -29,7 +30,6 @@ with DAG(
             print("PostgreSQL version:", version)
             cur.close()
             conn.close()
-            load_and_insert()
             return "SUCCESS: Connected to PostgreSQL"
         except Exception as e:
             print("ERROR:", str(e))
