@@ -70,6 +70,8 @@ with DAG(
     def trigger_gits():
         GIT_REPO  = Variable.get("GIT_REPO")
         LOCAL_DIR  = Variable.get("LOCAL_DIR")
+        GIT_USER  = Variable.get("GIT_USER")
+        GIT_EMAIL = Variable.get("GIT_EMAIL")
         GIT_TOKEN = Variable.get("GIT_TOKEN", default_var=None)
 
         # Xóa folder cũ nếu có
