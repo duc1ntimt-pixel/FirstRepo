@@ -48,6 +48,7 @@ with DAG(
             port=POSTGRES_CONFIG['port'],
             database=POSTGRES_CONFIG['dbname']
         )
+        engine = create_engine(url)
         df_demo      = pd.read_sql_query("SELECT * FROM demographic",      engine)
         df_gambling  = pd.read_sql_query("SELECT * FROM gambling",        engine)
         df_rg        = pd.read_sql_query("SELECT * FROM rg_information",   engine)
