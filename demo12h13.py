@@ -16,6 +16,16 @@ logger = logging.getLogger("airflow.task")
 import requests
 import json
 from tasks.model_tasks.rg_dv1.train import load_and_insert
+import numpy as np
+
+def convert_numpy_to_python(d):
+    for k, v in d.items():
+        if isinstance(v, (np.integer, np.int64)):
+            d[k] = int(v)
+        elif isinstance(v, (np.floating, np.float64)):
+            d[k] = float(v)
+    return d
+
 POSTGRES_CONFIG = get_PostgreSQL_conn_params()
 
 default_args = {
@@ -269,6 +279,8 @@ with DAG(
 
         # Gọi API
         try:
+            feature_dict = convert_numpy_to_python(feature_dict)
+            
             response = requests.post(url, headers=headers, json=feature_dict)
             response.raise_for_status()
             result = response.json()
