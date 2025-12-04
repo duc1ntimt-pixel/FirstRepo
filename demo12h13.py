@@ -121,7 +121,7 @@ with DAG(
         print(f"[INFO] Pushing changes to repo")
         push_cmd = f'git -c http.extraheader="AUTHORIZATION: Basic {GIT_TOKEN}" push {GIT_REPO}'
         print(f"[CMD] {push_cmd}")
-        subprocess.run(push_cmd, shell=True, check=True)
+        subprocess.run(push_cmd, shell=True, check=True, cwd=LOCAL_DIR)
         print(f"[INFO] Push completed")
 
     @task
