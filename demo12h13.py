@@ -90,10 +90,15 @@ with DAG(
         print(f"[CMD] {cmd}")
         try:
             subprocess.run(cmd, shell=True, check=True)
-            print("[INFO] Clone completed")
         except subprocess.CalledProcessError as e:
             print(f"[ERROR] Clone failed: {e}")
-            return  # dừng task nếu clone không thành công
+            return
+
+        if not os.path.exists(os.path.join(LOCAL_DIR, ".git")):
+            print(f"[ERROR] Clone failed: .git folder not found")
+            return
+
+        print("[INFO] Clone completed")
         
         # Đường dẫn file deploy.md
         deploy_file = os.path.join(LOCAL_DIR, "deploy.md")
