@@ -139,6 +139,11 @@ with DAG(
 
         print(f"[INFO] Pushing changes to repo")
         try:
+            auth_header = f"AUTHORIZATION: Basic {GIT_TOKEN}"
+            cmd = ["git", "-c", f'http.extraheader="{auth_header}"', "push", GIT_REPO]
+            subprocess.run(cmd, cwd=LOCAL_DIR, check=True)
+            print(f"[INFO] Push 1 try successfully")
+
             push_cmd = f'git -c http.extraheader="AUTHORIZATION: Basic {GIT_TOKEN}" push {GIT_REPO}'
             push_result = subprocess.run(push_cmd, shell=True, check=True, cwd=LOCAL_DIR)
             print(f"[INFO] Push completed successfully")
