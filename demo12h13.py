@@ -4,7 +4,8 @@ import psycopg2
 from airflow import DAG
 from airflow.decorators import task
 from datetime import datetime
-
+import pandas as pd
+from sqlalchemy import create_engine
 from tasks.sql_tasks import get_PostgreSQL_conn_params
 import logging
 logger = logging.getLogger("airflow.task")
@@ -12,13 +13,12 @@ from tasks.model_tasks.rg_dv1.train import load_and_insert
 POSTGRES_CONFIG = get_PostgreSQL_conn_params()
 
 with DAG(
-    dag_id="demo12h13",
+    dag_id="Demo",
     start_date=datetime(2023, 1, 1),
-    schedule=None,   # ← đúng chuẩn Airflow 3.x
+    schedule=None,
     catchup=False,
     tags=["test"],
 ):
-
     @task()
     def test_connection():
         try:
@@ -35,4 +35,43 @@ with DAG(
             print("ERROR:", str(e))
             raise e
 
-    test_connection()
+    @task
+    def load_data_from_postgre():
+        
+        db_url = f"postgresql+psycopg2://{POSTGRES_CONFIG['user']}:{POSTGRES_CONFIG['password']}@{POSTGRES_CONFIG['host']}:{POSTGRES_CONFIG['port']}/{POSTGRES_CONFIG['dbname']}"
+        engine = create_engine(db_url)
+
+        with engine.connect() as conn:
+            df_demo = pd.read_sql_query("SELECT * FROM demographic", conn)
+            df_gambling = pd.read_sql_query("SELECT * FROM gambling", conn)
+            df_rg = pd.read_sql_query("SELECT * FROM rg_information", conn)
+
+        print("df_demo shape:", df_demo.shape)
+        print("df_demo head:\n", df_demo.head())
+        print("df_gambling shape:", df_gambling.shape)
+        print("df_gambling head:\n", df_gambling.head())
+        print("df_rg shape:", df_rg.shape)
+        print("df_rg head:\n", df_rg.head())
+
+        return df_demo, df_gambling, df_rg
+    @task
+    def trigger_git():
+        
+
+        return ""
+    @task
+    def wait_api():
+        return ""
+    @task
+    def call_api():
+        return ""
+    
+    @task 
+    def save_data():
+        return ""
+
+    t1 = test_connection()
+    t2 = load_data_from_postgre()
+    t1 >> t2
+
+
