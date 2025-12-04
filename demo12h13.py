@@ -3,13 +3,14 @@
 import psycopg2
 from airflow import DAG
 from airflow.decorators import task
+import subprocess
+import os
 from datetime import datetime
 import pandas as pd
 from sqlalchemy import create_engine
 from tasks.sql_tasks import get_PostgreSQL_conn_params
 import logging
 from sqlalchemy.engine import make_url
-
 logger = logging.getLogger("airflow.task")
 from tasks.model_tasks.rg_dv1.train import load_and_insert
 POSTGRES_CONFIG = get_PostgreSQL_conn_params()
