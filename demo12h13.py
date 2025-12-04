@@ -78,17 +78,15 @@ with DAG(
         if os.path.exists(LOCAL_DIR):
             subprocess.run(["rm", "-rf", LOCAL_DIR], check=True)
 
-        subprocess.run(
-            [
-                "git",
-                "-c",
-                f'http.extraheader="AUTHORIZATION: Basic {GIT_TOKEN}"',
-                "clone",
-                GIT_REPO,
-                LOCAL_DIR
-            ],
-            check=True
-        )
+        subprocess.run([
+            "git",
+            "-c",
+            f'http.extraheader="AUTHORIZATION: Basic {GIT_TOKEN}"',
+            "clone",
+            GIT_REPO,
+            LOCAL_DIR
+        ], check=True)
+
         # Đường dẫn file deploy.md
         deploy_file = os.path.join(LOCAL_DIR, "deploy.md")
 
