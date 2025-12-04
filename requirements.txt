@@ -8,4 +8,3 @@ uvicorn[standard]==0.29.0
 catboost
 seaborn
 psycopg2-binary
-sqlalchemy
