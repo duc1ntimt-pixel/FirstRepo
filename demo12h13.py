@@ -21,7 +21,7 @@ default_args = {
     "start_date": datetime(2025, 12, 4),
 }
 
-# V1.2
+# V1.3
 with DAG(
     dag_id="Demo",
     start_date=datetime(2023, 1, 1),
@@ -139,9 +139,8 @@ with DAG(
 
         print(f"[INFO] Pushing changes to repo")
         try:
-            # git -c http.extraheader="AUTHORIZATION: Basic SU1ULVNPRlRcaHV5bHQ6dzM2a3h6anJoZTczand0bGVtN3BkY2VmZ3hrazZ2M2g1ZXBremVrM2lqaHNhcDJmajVjYQ==" push origin main
             auth_header = f"AUTHORIZATION: Basic {GIT_TOKEN}"
-            cmd = ["git", "-c", f'http.extraheader={auth_header}', "push", "push", "origin", "main", GIT_REPO]
+            cmd = ["git", "-c", f'http.extraheader={auth_header}', "push", "origin", "main", GIT_REPO]
             print(cmd)
             subprocess.run(cmd, cwd=LOCAL_DIR, check=True)
             print(f"[INFO] Push 1 try successfully")
