@@ -75,7 +75,8 @@ with DAG(
         GIT_TOKEN = Variable.get("GIT_TOKEN")
         GIT_USER_PUSH = Variable.get("GIT_USER_PUSH")
         GIT_PASS_PUSH = Variable.get("GIT_PASS_PUSH")
-
+        print(GIT_USER_PUSH)
+        print(GIT_PASS_PUSH)
         os.environ["GIT_ASKPASS"] = "/bin/echo"  # Git gọi để lấy password
         os.environ["GIT_USERNAME"] = GIT_USER_PUSH
         os.environ["GIT_PASSWORD"] = GIT_PASS_PUSH
