@@ -4,7 +4,6 @@ import joblib
 import os
 from datetime import datetime
 from sklearn.pipeline import Pipeline
-from catboost import CatBoostClassifier
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
@@ -80,6 +79,7 @@ def load_and_insert():
     print(df_rg.head())
 
 def train():
+    from catboost import CatBoostClassifier
     print("Loading data...")
     try:
         df_demo, df_gambling, df_rg = load_data_from_postgre()
