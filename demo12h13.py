@@ -17,6 +17,7 @@ import requests
 import json
 from tasks.model_tasks.rg_dv1.train import load_and_insert
 import numpy as np
+import time
 
 def convert_numpy_to_python(d):
     for k, v in d.items():
@@ -271,7 +272,29 @@ with DAG(
 
     @task
     def wait_api():
-        return ""
+        url = "http://192.168.100.117:32051/" # 3
+        max_retries = 100          # số lần thử tối đa (hoặc có thể bỏ nếu muốn loop vô hạn)
+        retry_delay = 5            # giây giữa các lần thử
+
+        for attempt in range(max_retries):
+            try:
+                response = requests.get(url, timeout=5)
+                if response.status_code == 200:
+                    data = response.json()
+                    # Kiểm tra điều kiện API sẵn sàng
+                    if data.get("status") == "RG Prediction API is running." and data.get("model_loaded") == True:
+                        print(f"[INFO] API is ready: {data}")
+                        return data
+                    else:
+                        print(f"[INFO] API not ready yet: {data}, retrying in {retry_delay}s...")
+                else:
+                    print(f"[WARNING] HTTP {response.status_code}, retrying in {retry_delay}s...")
+            except requests.exceptions.RequestException as e:
+                print(f"[ERROR] Cannot reach API: {e}, retrying in {retry_delay}s...")
+
+            time.sleep(retry_delay)
+
+        raise Exception(f"API not ready after {max_retries} attempts")
     @task
     def call_api(feature_dict):
         url = "http://192.168.100.117:32053/predict"
@@ -315,8 +338,10 @@ with DAG(
         return f"Inserted user_id={data.get('user_id')} successfully"
 
     t1 = load_data_from_postgre()
-    t2 = call_api(t1)
-    t3 = save_data(t2)
+    t2 = trigger_gits()
+    t3 = wait_api()
+    t4 = call_api(t1)
+    t5 = save_data(t2)
 
-t1 >> t2 >> t3
+t1 >> t2 >> t3 >> t4 >> t5
 
