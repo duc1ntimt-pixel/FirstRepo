@@ -272,8 +272,8 @@ with DAG(
 
     @task
     def wait_api():
-        url = "http://192.168.100.117:32053/" # 3
-        max_retries = 100          # số lần thử tối đa (hoặc có thể bỏ nếu muốn loop vô hạn)
+        url = "http://192.168.100.117:32051/" # 3
+        max_retries = 2          # số lần thử tối đa (hoặc có thể bỏ nếu muốn loop vô hạn)
         retry_delay = 5            # giây giữa các lần thử
 
         for attempt in range(max_retries):
@@ -341,7 +341,7 @@ with DAG(
     t2 = trigger_gits()
     t3 = wait_api()
     t4 = call_api(t1)
-    t5 = save_data(t2)
+    t5 = save_data(t4)
 
 t1 >> t2 >> t3 >> t4 >> t5
 
