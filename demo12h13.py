@@ -5,6 +5,7 @@ from airflow import DAG
 from airflow.decorators import task
 import subprocess
 import os
+from airflow.models import Variable
 from datetime import datetime
 import pandas as pd
 from sqlalchemy import create_engine
@@ -67,11 +68,11 @@ with DAG(
     
     @task
     def trigger_gits():
-        GIT_REPO = os.getenv("GIT_REPO")
-        LOCAL_DIR = os.getenv("LOCAL_DIR")
-        GIT_USER = os.getenv("GIT_USER")
-        GIT_EMAIL = os.getenv("GIT_EMAIL")
-        GIT_TOKEN = os.getenv("GIT_TOKEN")  # Nếu repo private
+        GIT_REPO  = Variable.get("GIT_REPO")
+        LOCAL_DIR  = Variable.get("LOCAL_DIR")
+        GIT_USER  = Variable.get("GIT_USER")
+        GIT_EMAIL = Variable.get("GIT_EMAIL")
+        GIT_TOKEN = Variable.get("GIT_TOKEN", default_var=None)
 
         # Xóa folder cũ nếu có
         if os.path.exists(LOCAL_DIR):
