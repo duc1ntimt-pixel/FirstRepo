@@ -14,6 +14,11 @@ logger = logging.getLogger("airflow.task")
 from tasks.model_tasks.rg_dv1.train import load_and_insert
 POSTGRES_CONFIG = get_PostgreSQL_conn_params()
 
+default_args = {
+    "owner": "airflow",
+    "start_date": datetime(2025, 12, 4),
+}
+
 # V1.1
 with DAG(
     dag_id="Demo",
@@ -39,31 +44,6 @@ with DAG(
             raise e
 
     @task
-    def load_data_from_postgre1():
-        url = make_url("postgresql+psycopg2://")  # base
-        url = url.set(
-            username=POSTGRES_CONFIG['user'],
-            password=POSTGRES_CONFIG['password'], 
-            host=POSTGRES_CONFIG['host'],
-            port=POSTGRES_CONFIG['port'],
-            database=POSTGRES_CONFIG['dbname']
-        )
-        engine = create_engine(url, future=False)
-
-        with engine.connect() as conn:
-            df_demo     = pd.read_sql_query("SELECT * FROM demographic",     conn)
-            df_gambling = pd.read_sql_query("SELECT * FROM gambling",        conn)
-            df_rg       = pd.read_sql_query("SELECT * FROM rg_information",  conn)
-
-        print("df_demo shape:", df_demo.shape)
-        print(df_demo.head())
-        print("df_gambling shape:", df_gambling.shape)
-        print(df_gambling.head())
-        print("df_rg shape:", df_rg.shape)
-        print(df_rg.head())
-
-        return df_demo, df_gambling, df_rg
-    @task
     def load_data_from_postgre():
     # Dùng đúng cái đã test thành công ở task đầu
         conn = psycopg2.connect(**POSTGRES_CONFIG)
@@ -85,10 +65,43 @@ with DAG(
         return df_demo, df_gambling, df_rg
     
     @task
-    def trigger_git():
-        
+    def trigger_gits():
+        GIT_REPO = os.getenv("GIT_REPO")
+        LOCAL_DIR = os.getenv("LOCAL_DIR")
+        GIT_USER = os.getenv("GIT_USER")
+        GIT_EMAIL = os.getenv("GIT_EMAIL")
+        GIT_TOKEN = os.getenv("GIT_TOKEN")  # Nếu repo private
 
-        return ""
+        # Xóa folder cũ nếu có
+        if os.path.exists(LOCAL_DIR):
+            subprocess.run(["rm", "-rf", LOCAL_DIR], check=True)
+
+        # Clone repo
+        clone_url = GIT_REPO
+        if GIT_TOKEN:  # dùng token nếu repo private
+            clone_url = GIT_REPO.replace("https://", f"https://{GIT_TOKEN}@")
+        subprocess.run(["git", "clone", clone_url, LOCAL_DIR], check=True)
+
+        # Đường dẫn file deploy.md
+        deploy_file = os.path.join(LOCAL_DIR, "deploy.md")
+
+        # Nếu không có thì tạo mới
+        if not os.path.exists(deploy_file):
+            with open(deploy_file, "w") as f:
+                f.write("# Deploy Log\n\n")
+
+        # Thêm tag ngày giờ
+        tag = datetime.now().strftime("Deploy at %Y-%m-%d %H:%M:%S\n")
+        with open(deploy_file, "a") as f:
+            f.write(tag)
+
+        # Commit & Push
+        subprocess.run(["git", "config", "user.name", GIT_USER], cwd=LOCAL_DIR, check=True)
+        subprocess.run(["git", "config", "user.email", GIT_EMAIL], cwd=LOCAL_DIR, check=True)
+        subprocess.run(["git", "add", "deploy.md"], cwd=LOCAL_DIR, check=True)
+        subprocess.run(["git", "commit", "-m", f"Update deploy.md {tag.strip()}"], cwd=LOCAL_DIR, check=True)
+        subprocess.run(["git", "push"], cwd=LOCAL_DIR, check=True)
+
     @task
     def wait_api():
         return ""
@@ -100,8 +113,9 @@ with DAG(
     def save_data():
         return ""
 
-    t1 = test_connection()
-    t2 = load_data_from_postgre()
-    t1 >> t2
+    # t1 = test_connection()
+    # t2 = load_data_from_postgre()
+    trigger_gits()
+    # t1 >> t2
 
 
