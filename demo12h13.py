@@ -48,19 +48,16 @@ with DAG(
             port=POSTGRES_CONFIG['port'],
             database=POSTGRES_CONFIG['dbname']
         )
-        engine = create_engine(url)
-        
-        with engine.connect() as conn:
-            df_demo = pd.read_sql_query("SELECT * FROM demographic", conn)
-            df_gambling = pd.read_sql_query("SELECT * FROM gambling", conn)
-            df_rg = pd.read_sql_query("SELECT * FROM rg_information", conn)
+        df_demo      = pd.read_sql_query("SELECT * FROM demographic",      engine)
+        df_gambling  = pd.read_sql_query("SELECT * FROM gambling",        engine)
+        df_rg        = pd.read_sql_query("SELECT * FROM rg_information",   engine)
 
         print("df_demo shape:", df_demo.shape)
-        print("df_demo head:\n", df_demo.head())
+        print(df_demo.head())
         print("df_gambling shape:", df_gambling.shape)
-        print("df_gambling head:\n", df_gambling.head())
+        print(df_gambling.head())
         print("df_rg shape:", df_rg.shape)
-        print("df_rg head:\n", df_rg.head())
+        print(df_rg.head())
 
         return df_demo, df_gambling, df_rg
     @task
