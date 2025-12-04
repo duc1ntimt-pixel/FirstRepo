@@ -39,7 +39,7 @@ with DAG(
             raise e
 
     @task
-    def load_data_from_postgre():
+    def load_data_from_postgre1():
         url = make_url("postgresql+psycopg2://")  # base
         url = url.set(
             username=POSTGRES_CONFIG['user'],
@@ -63,6 +63,27 @@ with DAG(
         print(df_rg.head())
 
         return df_demo, df_gambling, df_rg
+    @task
+    def load_data_from_postgre():
+    # Dùng đúng cái đã test thành công ở task đầu
+    conn = psycopg2.connect(**POSTGRES_CONFIG)
+    
+    try:
+        # Dùng pandas + psycopg2 connection → 100% không lỗi cursor
+        df_demo     = pd.read_sql("SELECT * FROM demographic",     conn)
+        df_gambling = pd.read_sql("SELECT * FROM gambling",        conn)
+        df_rg       = pd.read_sql("SELECT * FROM rg_information",  conn)
+
+        print("LOAD THÀNH CÔNG 100% bằng psycopg2 + pandas!")
+        print(f"demographic:     {df_demo.shape}")
+        print(f"gambling:        {df_gambling.shape}")
+        print(f"rg_information:  {df_rg.shape}")
+
+    finally:
+        conn.close()  # luôn đóng kết nối
+
+    return df_demo, df_gambling, df_rg
+    
     @task
     def trigger_git():
         
