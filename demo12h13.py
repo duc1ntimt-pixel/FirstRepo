@@ -241,8 +241,8 @@ with DAG(
         GIT_USER  = Variable.get("GIT_USER")
         GIT_EMAIL = Variable.get("GIT_EMAIL")
         GIT_TOKEN = Variable.get("GIT_TOKEN")
-        GIT_USER_PUSH = Variable.get("GIT_USER_PUSH")
-        GIT_PASS_PUSH = Variable.get("GIT_PASS_PUSH")
+        # GIT_USER_PUSH = Variable.get("GIT_USER_PUSH")
+        # GIT_PASS_PUSH = Variable.get("GIT_PASS_PUSH")
         print(GIT_USER_PUSH)
         print(GIT_PASS_PUSH)
         print(GIT_USER)
@@ -301,23 +301,24 @@ with DAG(
         subprocess.run(["git", "config", "user.name", GIT_USER], cwd=LOCAL_DIR, check=True)
         subprocess.run(["git", "config", "user.email", GIT_EMAIL], cwd=LOCAL_DIR, check=True)
 
+        # remote_name = "origin"
+        # auth_repo = GIT_REPO.replace("https://", f"https://{GIT_USER}:{GIT_TOKEN}@")
+        # subprocess.run(["git", "remote", "remove", remote_name], cwd=LOCAL_DIR, check=False)  # delete if existed
+        # subprocess.run(["git", "remote", "add", remote_name, auth_repo], cwd=LOCAL_DIR, check=True)
+        # print(f"[INFO] Remote {remote_name} set to {auth_repo}")
+        # print("[INFO] Checking git remote -v")
+        # subprocess.run(["git", "remote", "-v"], cwd=LOCAL_DIR, check=True)
+
         print(f"[INFO] Adding deploy.md to git")
-        remote_name = "origin"
-        auth_repo = GIT_REPO.replace("https://", f"https://{GIT_USER}:{GIT_TOKEN}@")
-        subprocess.run(["git", "remote", "remove", remote_name], cwd=LOCAL_DIR, check=False)  # delete if existed
-        subprocess.run(["git", "remote", "add", remote_name, auth_repo], cwd=LOCAL_DIR, check=True)
-        print(f"[INFO] Remote {remote_name} set to {auth_repo}")
-        print("[INFO] Checking git remote -v")
-        subprocess.run(["git", "remote", "-v"], cwd=LOCAL_DIR, check=True)
         subprocess.run(["git", "add", "deploy.md"], cwd=LOCAL_DIR, check=True)
 
         print(f"[INFO] Committing changes")
         subprocess.run(["git", "commit", "-m", f"Update deploy.md {tag.strip()}"], cwd=LOCAL_DIR, check=True)
 
-        os.environ["GIT_ASKPASS"] = "/bin/echo"
-        os.environ["GIT_USERNAME"] = GIT_USER_PUSH
-        os.environ["GIT_PASSWORD"] = GIT_PASS_PUSH
-        subprocess.run(["git", "config", "credential.helper", "store"], cwd=LOCAL_DIR, check=True)
+        # os.environ["GIT_ASKPASS"] = "/bin/echo"
+        # os.environ["GIT_USERNAME"] = GIT_USER_PUSH
+        # os.environ["GIT_PASSWORD"] = GIT_PASS_PUSH
+        # subprocess.run(["git", "config", "credential.helper", "store"], cwd=LOCAL_DIR, check=True)
 
         cmdpush = f'git -c http.extraheader="AUTHORIZATION: Basic {GIT_TOKEN}" push origin main'
         print(f"[CMD] {cmdpush}")
