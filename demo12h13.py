@@ -345,7 +345,7 @@ with DAG(
         new_rs = None
 
         for attempt in range(max_retries):
-            current_rs = get_latest_rs_name()
+            current_rs = get_latest_rs_line()
             print(f"[INFO] last={last_deployment_name}, current={current_rs}")
 
             # A new ReplicaSet is detected
@@ -453,10 +453,11 @@ with DAG(
         api = client.AppsV1Api()
 
         rs_list = api.list_namespaced_replica_set(namespace="afusion-ai-nuextract")
-        print(rs_list)
         # Filter all rs of deployment
         filtered = [rs for rs in rs_list.items if "ft-ml-pipeline" in rs.metadata.name]
-        print(filtered)
+        print("RS count in namespace:", len(rs_list.items))
+        print("Filtered:", len(filtered))
+        
         if not filtered:
             return None
 
@@ -468,26 +469,26 @@ with DAG(
         print(newest)
         return newest.metadata.name
 
-    def get_latest_rs_line1():
+    # def get_latest_rs_line1():
         
-        cmd = [
-            "kubectl", "get", "rs",
-            "-n", "afusion-ai-nuextract",
-            "--sort-by=.metadata.creationTimestamp"
-        ]
+    #     cmd = [
+    #         "kubectl", "get", "rs",
+    #         "-n", "afusion-ai-nuextract",
+    #         "--sort-by=.metadata.creationTimestamp"
+    #     ]
 
-        result = subprocess.run(cmd, capture_output=True, text=True)
+    #     result = subprocess.run(cmd, capture_output=True, text=True)
 
-        lines = [line for line in result.stdout.splitlines() if "ft-ml-pipeline" in line]
+    #     lines = [line for line in result.stdout.splitlines() if "ft-ml-pipeline" in line]
 
-        if not lines:
-            return None
+    #     if not lines:
+    #         return None
 
-        latest_line = lines[-1]
+    #     latest_line = lines[-1]
 
-        rs_name = latest_line.split()[0]
+    #     rs_name = latest_line.split()[0]
 
-        return rs_name
+    #     return rs_name
 
 
 
