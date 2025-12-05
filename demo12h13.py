@@ -272,39 +272,32 @@ with DAG(
         os.environ["GIT_PASSWORD"] = GIT_PASS_PUSH
         subprocess.run(["git", "config", "credential.helper", "store"], cwd=LOCAL_DIR, check=True)
 
-        # Push
-        # print(f"[INFO] Pushing changes to repo")
+        subprocess.run(["git", "-c", f"http.extraheader=AUTHORIZATION: Basic {GIT_TOKEN}", "push", "origin", "main"], cwd=LOCAL_DIR, check=True)
+        print("[INFO] Push completed successfully")
+
         # try:
-        #     subprocess.run(["git", "push", "origin", "main"], cwd=LOCAL_DIR, check=True)
-        #     print(f"[INFO] Push completed successfully")
-        # except subprocess.CalledProcessError as e:
-        #     print(f"[ERROR] Push failed: {e}")
-        push_cmd = "git push origin main"
-        print(f"[CMD] {push_cmd}")
+        #     # spawn process
+        #     child = pexpect.spawn(push_cmd, cwd=LOCAL_DIR, timeout=120)
 
-        try:
-            # spawn process
-            child = pexpect.spawn(push_cmd, cwd=LOCAL_DIR, timeout=120)
+        #     # Chờ git hỏi username
+        #     i = child.expect([
+        #         "Username for .*:", 
+        #         "Password for .*:", 
+        #         pexpect.EOF, 
+        #         pexpect.TIMEOUT
+        #     ])
 
-            # Chờ git hỏi username
-            i = child.expect([
-                "Username for .*:", 
-                "Password for .*:", 
-                pexpect.EOF, 
-                pexpect.TIMEOUT
-            ])
+        #     if i == 0:
+        #         print("[EXPECT] Git yêu cầu Username → gửi username")
+        #         child.sendline(GIT_USER_PUSH)
+        #         i = child.expect(["Password for .*:", pexpect.EOF, pexpect.TIMEOUT])
 
-            if i == 0:
-                print("[EXPECT] Git yêu cầu Username → gửi username")
-                child.sendline(GIT_USER_PUSH)
-                i = child.expect(["Password for .*:", pexpect.EOF, pexpect.TIMEOUT])
+        #     if i == 1:
+        #         print("[EXPECT] Git yêu cầu Password → gửi password")
+        #         child.sendline(GIT_PASS_PUSH)
+        #         child.expect(pexpect.EOF)
 
-            if i == 1:
-                print("[EXPECT] Git yêu cầu Password → gửi password")
-                child.sendline(GIT_PASS_PUSH)
-                child.expect(pexpect.EOF)
-
-            print("[INFO] Push completed successfully")
+        #     print("[INFO] Push completed successfully")
 
         except Exception as e:
             print(f"[ERROR] Push failed with pexpect: {e}")
