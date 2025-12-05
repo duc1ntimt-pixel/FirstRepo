@@ -58,137 +58,180 @@ with DAG(
 
     @task
     def load_data_from_postgre(dag_run=None):
+        # import psycopg2
+        # import pandas as pd
+        # import numpy as np
+        # from datetime import datetime
+
         conn = psycopg2.connect(**POSTGRES_CONFIG)
         user_id = dag_run.conf.get("user_id", 7973162)
-        print(user_id)
+
         try:
             df_demo = pd.read_sql("SELECT * FROM demographic WHERE user_id = %s", conn, params=(user_id,))
             df_gambling = pd.read_sql("SELECT * FROM gambling WHERE user_id = %s", conn, params=(user_id,))
             df_rg = pd.read_sql("SELECT * FROM rg_information WHERE user_id = %s", conn, params=(user_id,))
-
         finally:
             conn.close()
 
+        # -------------------------------------------------------------------
+        # 1. Validate demographic info
+        # -------------------------------------------------------------------
         if df_demo.empty:
-            raise ValueError("❌ User not found in demographic table")
-        # -----------------------------
-        # 2. Convert dates
-        # -----------------------------
+            raise ValueError("❌ demographic table missing user data")
+
         df_demo['registration_date'] = pd.to_datetime(df_demo['registration_date'], errors='coerce')
-        df_gambling['date'] = pd.to_datetime(df_gambling['date'], errors='coerce')
 
-        # -----------------------------
-        # 3. RG label
-        # -----------------------------
-        df_demo['rg'] = 1 if not df_rg.empty else 0
+        country  = str(df_demo['country'].iloc[0])
+        language = str(df_demo['language'].iloc[0])
+        gender   = str(df_demo['gender'].iloc[0])
 
-        # -----------------------------
-        # 4. Gambling aggregation
-        # -----------------------------
+        birth_year = df_demo['birth_year'].iloc[0]
+        birth_year = int(birth_year) if pd.notna(birth_year) else None
+        age = datetime.now().year - birth_year if birth_year else 0
+
+        reg_date = df_demo['registration_date'].iloc[0]
+
+        # -------------------------------------------------------------------
+        # If NO gambling data → return zero-feature vector
+        # -------------------------------------------------------------------
         if df_gambling.empty:
-            # if no gambling data, set zeros
-            feature_dict = {
-                "user_id": user_id,
-                "country": df_demo['country'].iloc[0],
-                "language": df_demo['language'].iloc[0],
-                "gender": df_demo['gender'].iloc[0],
-                "age": datetime.now().year - df_demo['birth_year'].iloc[0],
-                "account_age_days": 0,
-                "total_turnover": 0,
-                "mean_turnover": 0,
-                "total_hold": 0,
-                "mean_hold": 0,
-                "total_bets": 0,
-                "mean_bets": 0,
+            return {
+                "user_id": int(user_id),
+                "country": country,
+                "language": language,
+                "gender": gender,
+                "age": age,
+                "account_age_days": (datetime.now() - reg_date).days if pd.notna(reg_date) else 0,
+
+                "total_turnover": 0.0,
+                "mean_turnover": 0.0,
+                "total_hold": 0.0,
+                "mean_hold": 0.0,
+                "total_bets": 0.0,
+                "mean_bets": 0.0,
+
                 "days_active": 0,
                 "days_since_last_bet": 0,
-                "rolling_7d_std_turnover": 0,
-                "rolling_7d_std_hold": 0,
-                "rolling_7d_std_num_bets": 0,
-                "rolling_30d_std_turnover": 0,
-                "rolling_30d_std_hold": 0,
-                "rolling_30d_std_num_bets": 0,
-                "rolling_7d_mean_turnover": 0,
-                "rolling_7d_mean_hold": 0,
-                "rolling_7d_mean_num_bets": 0,
-                "rolling_30d_mean_turnover": 0,
-                "rolling_30d_mean_hold": 0,
-                "rolling_30d_mean_num_bets": 0
-            }
-            return feature_dict
 
-        # Continue if data exists
+                "rolling_7d_std_turnover": 0.0,
+                "rolling_7d_std_hold": 0.0,
+                "rolling_7d_std_num_bets": 0.0,
+                "rolling_30d_std_turnover": 0.0,
+                "rolling_30d_std_hold": 0.0,
+                "rolling_30d_std_num_bets": 0.0,
+
+                "rolling_7d_mean_turnover": 0.0,
+                "rolling_7d_mean_hold": 0.0,
+                "rolling_7d_mean_num_bets": 0.0,
+                "rolling_30d_mean_turnover": 0.0,
+                "rolling_30d_mean_hold": 0.0,
+                "rolling_30d_mean_num_bets": 0.0,
+            }
+
+        # -------------------------------------------------------------------
+        # 2. User HAS gambling activity → compute features
+        # -------------------------------------------------------------------
+        df_gambling['date'] = pd.to_datetime(df_gambling['date'], errors='coerce')
         df_gambling = df_gambling.sort_values("date")
 
+        # ---------------------------------------
+        # Safe Aggregation (NO KEY ERROR POSSIBLE)
+        # ---------------------------------------
         df_agg = df_gambling.agg({
             "turnover": ["sum", "mean"],
             "hold": ["sum", "mean"],
             "num_bets": ["sum", "mean"]
         })
-        print(df_agg.columns)
-        df_agg.columns = ["total_turnover", "mean_turnover",
-                        "total_hold", "mean_hold",
-                        "total_bets", "mean_bets"]
-        # df_agg.columns = ['_'.join(col).strip() for col in df_agg.columns.values]
-        # df_agg = df_agg.rename(columns={
-        #     'turnover_sum': 'total_turnover',
-        #     'turnover_mean': 'mean_turnover',
-        #     'hold_sum': 'total_hold',
-        #     'hold_mean': 'mean_hold',
-        #     'num_bets_sum': 'total_bets',
-        #     'num_bets_mean': 'mean_bets',
-        # })
 
+        df_agg.columns = ['_'.join(col).strip() for col in df_agg.columns.values]
+
+        # Expected columns → rename mapping
+        mapping = {
+            "turnover_sum": "total_turnover",
+            "turnover_mean": "mean_turnover",
+            "hold_sum": "total_hold",
+            "hold_mean": "mean_hold",
+            "num_bets_sum": "total_bets",
+            "num_bets_mean": "mean_bets",
+        }
+
+        # Prepare defaults
+        agg_safe = {new: 0.0 for new in mapping.values()}
+
+        # Fill what exists
+        for old, new in mapping.items():
+            if old in df_agg.columns:
+                val = df_agg[old]
+                # df_agg is a 1-row dataframe → extract scalar
+                agg_safe[new] = float(val.iloc[0])
+
+        # ---------------------------------------
+        # Base temporal stats
+        # ---------------------------------------
         first_bet = df_gambling["date"].min()
-        last_bet = df_gambling["date"].max()
-        latest_date = last_bet  # local feature only
+        last_bet  = df_gambling["date"].max()
+        latest_date = last_bet
 
-        days_active = (last_bet - first_bet).days + 1
-        days_since_last = (latest_date - last_bet).days
+        days_active = int((last_bet - first_bet).days) + 1
+        days_since_last_bet = 0  # latest_date == last_bet always
 
-        # -----------------------------
-        # 5. Rolling windows
-        # -----------------------------
-        df_rolling = df_gambling.set_index("date")[["turnover", "hold", "num_bets"]]
+        # ---------------------------------------
+        # Rolling window features
+        # ---------------------------------------
+        df_roll = df_gambling.set_index("date")[["turnover", "hold", "num_bets"]]
 
         def roll_feature(window):
-            x = df_rolling.rolling(f"{window}D")
+            x = df_roll.rolling(f"{window}D")
+
+            mean_turnover = x["turnover"].mean().mean()
+            mean_hold     = x["hold"].mean().mean()
+            mean_bets     = x["num_bets"].mean().mean()
+
+            std_turnover = x["turnover"].std().mean()
+            std_hold     = x["hold"].std().mean()
+            std_bets     = x["num_bets"].std().mean()
+
             return {
-                f"rolling_{window}d_std_turnover": x["turnover"].std().mean(),
-                f"rolling_{window}d_std_hold": x["hold"].std().mean(),
-                f"rolling_{window}d_std_num_bets": x["num_bets"].std().mean(),
-                f"rolling_{window}d_mean_turnover": x["turnover"].mean().mean(),
-                f"rolling_{window}d_mean_hold": x["hold"].mean().mean(),
-                f"rolling_{window}d_mean_num_bets": x["num_bets"].mean().mean(),
+                f"rolling_{window}d_std_turnover": 0.0 if pd.isna(std_turnover) else float(std_turnover),
+                f"rolling_{window}d_std_hold":     0.0 if pd.isna(std_hold)     else float(std_hold),
+                f"rolling_{window}d_std_num_bets": 0.0 if pd.isna(std_bets)     else float(std_bets),
+
+                f"rolling_{window}d_mean_turnover": 0.0 if pd.isna(mean_turnover) else float(mean_turnover),
+                f"rolling_{window}d_mean_hold":     0.0 if pd.isna(mean_hold)     else float(mean_hold),
+                f"rolling_{window}d_mean_num_bets": 0.0 if pd.isna(mean_bets)     else float(mean_bets),
             }
 
         f7 = roll_feature(7)
         f30 = roll_feature(30)
-        age = df_gambling['date'].max().year - df_demo['birth_year'].iloc[0]
 
-        # -----------------------------
-        # 6. Combine to final dict
-        # -----------------------------
+        # -------------------------------------------------------------------
+        # Build Final Feature Vector (NO MISSING FEATURES)
+        # -------------------------------------------------------------------
         feature_dict = {
-            "user_id": user_id,
-            "country": df_demo['country'].iloc[0],
-            "language": df_demo['language'].iloc[0],
-            "gender": df_demo['gender'].iloc[0],
+            "user_id": int(user_id),
+            "country": country,
+            "language": language,
+            "gender": gender,
             "age": age,
-            "account_age_days": (latest_date - df_demo['registration_date'].iloc[0]).days,
-            "total_turnover": df_agg["total_turnover"],
-            "mean_turnover": df_agg["mean_turnover"],
-            "total_hold": df_agg["total_hold"],
-            "mean_hold": df_agg["mean_hold"],
-            "total_bets": df_agg["total_bets"],
-            "mean_bets": df_agg["mean_bets"],
+
+            "account_age_days": (latest_date - reg_date).days if pd.notna(reg_date) else 0,
+
+            "total_turnover": agg_safe["total_turnover"],
+            "mean_turnover":  agg_safe["mean_turnover"],
+            "total_hold":     agg_safe["total_hold"],
+            "mean_hold":      agg_safe["mean_hold"],
+            "total_bets":     agg_safe["total_bets"],
+            "mean_bets":      agg_safe["mean_bets"],
+
             "days_active": days_active,
-            "days_since_last_bet": days_since_last,
+            "days_since_last_bet": days_since_last_bet,
+
             **f7,
-            **f30
+            **f30,
         }
 
         return feature_dict
+    
     @task
     def trigger_gits():
         import pexpect
