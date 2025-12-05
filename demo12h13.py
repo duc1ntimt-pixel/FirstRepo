@@ -381,11 +381,11 @@ with DAG(
 
         return f"Inserted user_id={data.get('user_id')} successfully"
 
-    # t1 = load_data_from_postgre()
+    t1 = load_data_from_postgre()
     t2 = trigger_gits()
-    # t3 = wait_api()
-    # t4 = call_api(t1)
-    # t5 = save_data(t4)
+    t3 = wait_api()
+    t4 = call_api(t1)
+    t5 = save_data(t4)
 
-# t1 >> t2 >> t3 >> t4 >> t5
+t1 >> t2 >> t3 >> t4 >> t5
 
