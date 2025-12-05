@@ -274,7 +274,7 @@ with DAG(
         cmdpush = f'git -c http.extraheader="AUTHORIZATION: Basic {GIT_TOKEN}" push origin main'
         print(f"[CMD] {cmdpush}")
         try:
-            subprocess.run(cmdpush, shell=True, check=True)
+            subprocess.run(cmdpush, shell=True, check=True, cwd=LOCAL_DIR)
             print("[INFO] Push completed successfully")
         except subprocess.CalledProcessError as e:
             print(f"[ERROR] Push failed: {e}")
