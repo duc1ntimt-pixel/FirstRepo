@@ -261,7 +261,6 @@ with DAG(
         print(f"[INFO] Remote {remote_name} set to {auth_repo}")
         print("[INFO] Checking git remote -v")
         subprocess.run(["git", "remote", "-v"], cwd=LOCAL_DIR, check=True)
-
         subprocess.run(["git", "add", "deploy.md"], cwd=LOCAL_DIR, check=True)
 
         print(f"[INFO] Committing changes")
@@ -272,9 +271,15 @@ with DAG(
         os.environ["GIT_PASSWORD"] = GIT_PASS_PUSH
         subprocess.run(["git", "config", "credential.helper", "store"], cwd=LOCAL_DIR, check=True)
 
-        subprocess.run(["git", "-c", f"http.extraheader=AUTHORIZATION: Basic {GIT_TOKEN}", "push", "origin", "main"], cwd=LOCAL_DIR, check=True)
-        print("[INFO] Push completed successfully")
-
+        cmdpush = f'git -c http.extraheader="AUTHORIZATION: Basic {GIT_TOKEN}" push origin main'
+        print(f"[CMD] {cmdpush}")
+        try:
+            subprocess.run(cmdpush, shell=True, check=True)
+            print("[INFO] Push completed successfully")
+        except subprocess.CalledProcessError as e:
+            print(f"[ERROR] Push failed: {e}")
+            return
+            
         # try:
         #     # spawn process
         #     child = pexpect.spawn(push_cmd, cwd=LOCAL_DIR, timeout=120)
