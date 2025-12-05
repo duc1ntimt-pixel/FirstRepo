@@ -220,7 +220,7 @@ with DAG(
             return
 
         print("[INFO] Clone completed")
-        
+
         # Đường dẫn file deploy.md
         deploy_file = os.path.join(LOCAL_DIR, "deploy.md")
 
@@ -252,6 +252,14 @@ with DAG(
         subprocess.run(["git", "config", "user.email", GIT_EMAIL], cwd=LOCAL_DIR, check=True)
 
         print(f"[INFO] Adding deploy.md to git")
+        remote_name = "origin"
+        auth_repo = GIT_REPO.replace("https://", f"https://{GIT_USER_PUSH}:{GIT_PASS_PUSH}@")
+        subprocess.run(["git", "remote", "remove", remote_name], cwd=LOCAL_DIR, check=False)  # Xóa nếu đã tồn tại
+        subprocess.run(["git", "remote", "add", remote_name, auth_repo], cwd=LOCAL_DIR, check=True)
+        print(f"[INFO] Remote {remote_name} set to {auth_repo}")
+        print("[INFO] Checking git remote -v")
+        subprocess.run(["git", "remote", "-v"], cwd=LOCAL_DIR, check=True)
+        
         subprocess.run(["git", "add", "deploy.md"], cwd=LOCAL_DIR, check=True)
 
         print(f"[INFO] Committing changes")
@@ -312,7 +320,7 @@ with DAG(
         except requests.RequestException as e:
             print(f"[ERROR] API call failed: {e}")
             return None
-    
+
     @task
     def save_data(data):
         if data is None:
@@ -337,11 +345,11 @@ with DAG(
 
         return f"Inserted user_id={data.get('user_id')} successfully"
 
-    t1 = load_data_from_postgre()
+    # t1 = load_data_from_postgre()
     t2 = trigger_gits()
-    t3 = wait_api()
-    t4 = call_api(t1)
-    t5 = save_data(t4)
+    # t3 = wait_api()
+    # t4 = call_api(t1)
+    # t5 = save_data(t4)
 
-t1 >> t2 >> t3 >> t4 >> t5
+# t1 >> t2 >> t3 >> t4 >> t5
 
