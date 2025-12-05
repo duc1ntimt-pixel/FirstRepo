@@ -332,7 +332,6 @@ with DAG(
     def wait_api(last_deployment_name):
         if last_deployment_name is None:
             print("[Error] last_deployment_name is None")
-            return "[Error] last_deployment_name is None"
 
         max_retries = 100
         retry_delay = 5
