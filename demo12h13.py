@@ -128,7 +128,7 @@ with DAG(
             "hold": ["sum", "mean"],
             "num_bets": ["sum", "mean"]
         })
-
+        print(df_agg.columns)
         df_agg.columns = ["total_turnover", "mean_turnover",
                         "total_hold", "mean_hold",
                         "total_bets", "mean_bets"]
