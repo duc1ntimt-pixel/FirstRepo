@@ -248,7 +248,7 @@ with DAG(
         print(GIT_USER)
         print(GIT_EMAIL)
         print(f"[INFO] Start trigger_gits task")
-
+        last_deployment_name = get_latest_rs_line()
         if os.path.exists(LOCAL_DIR):
             print(f"[INFO] Removing existing folder: {LOCAL_DIR}")
             subprocess.run(["rm", "-rf", LOCAL_DIR], check=True)
@@ -264,11 +264,11 @@ with DAG(
             subprocess.run(cmd, shell=True, check=True)
         except subprocess.CalledProcessError as e:
             print(f"[ERROR] Clone failed: {e}")
-            return
+            return None
 
         if not os.path.exists(os.path.join(LOCAL_DIR, ".git")):
             print(f"[ERROR] Clone failed: .git folder not found")
-            return
+            return None
 
         print("[INFO] Clone completed")
 
@@ -324,33 +324,86 @@ with DAG(
         try:
             subprocess.run(cmdpush, shell=True, check=True, cwd=LOCAL_DIR)
             print("[INFO] Push completed successfully")
+            return last_deployment_name
         except subprocess.CalledProcessError as e:
             print(f"[ERROR] Push failed: {e}")
-            return
+            return None
     @task
-    def wait_api():
+    def wait_api(last_deployment_name):
+        if last_deployment_name is None:
+            print("[Error] last_deployment_name is None")
+            return "[Error] last_deployment_name is None"
+
+        max_retries = 100
+        retry_delay = 5
         url = "http://192.168.100.117:32054/"
-        max_retries = 100          # max try 
-        retry_delay = 5            # delay
+
+        print("===== PHASE 1: WAIT FOR NEW DEPLOYMENT =====")
+
+        # -------------------------------------------------------
+        # PHASE 1: WAIT UNTIL A NEW REPLICASET APPEARS
+        # -------------------------------------------------------
+        new_rs = None
+
+        for attempt in range(max_retries):
+            current_rs = get_latest_rs_name()
+            print(f"[INFO] last={last_deployment_name}, current={current_rs}")
+
+            # A new ReplicaSet is detected
+            if current_rs and current_rs != last_deployment_name:
+                print("[INFO] >>> NEW DEPLOYMENT DETECTED <<<")
+                print(f"[INFO] Old RS: {last_deployment_name}")
+                print(f"[INFO] New RS: {current_rs}")
+
+                new_rs = current_rs
+                break   # Exit Phase 1 → go to Phase 2
+
+            else:
+                # Still no change in deployment
+                print("[INFO] No new deployment yet, waiting...")
+                time.sleep(retry_delay)
+
+        # If no new deployment after max retries
+        if new_rs is None:
+            raise Exception("No new deployment detected within the allowed time!")
+
+        # -------------------------------------------------------
+        # PHASE 2: WAIT UNTIL THE API RETURNS READY STATUS
+        # -------------------------------------------------------
+        print("===== PHASE 2: WAIT FOR API TO BE READY =====")
 
         for attempt in range(max_retries):
             try:
                 response = requests.get(url, timeout=5)
-                if response.status_code == 200:
-                    data = response.json()
-                    if data.get("status") == "RG Prediction API is running." and data.get("model_loaded") == True:
-                        print(f"[INFO] API is ready: {data}")
-                        return data
-                    else:
-                        print(f"[INFO] API not ready yet: {data}, retrying in {retry_delay}s...")
+
+                # API is reachable but not 200 → retry
+                if response.status_code != 200:
+                    print(f"[WARNING] API returned HTTP {response.status_code}, retrying...")
+                    time.sleep(retry_delay)
+                    continue
+
+                data = response.json()
+
+                # API returned OK, but not ready yet
+                if (
+                    data.get("status") == "RG Prediction API is running."
+                    and data.get("model_loaded") is True
+                ):
+                    print(f"[INFO] API is READY: {data}")
+                    return data   # SUCCESS
                 else:
-                    print(f"[WARNING] HTTP {response.status_code}, retrying in {retry_delay}s...")
+                    print(f"[INFO] API not ready yet: {data}, retrying...")
+                    time.sleep(retry_delay)
+                    continue
+
             except requests.exceptions.RequestException as e:
-                print(f"[ERROR] Cannot reach API: {e}, retrying in {retry_delay}s...")
+                # API unreachable → retry
+                print(f"[ERROR] Cannot reach API: {e}, retrying...")
+                time.sleep(retry_delay)
 
-            time.sleep(retry_delay)
+        # Max retries reached and API still not ready
+        raise Exception("API did not become ready after max_retries!")
 
-        raise Exception(f"API not ready after {max_retries} attempts")
     @task
     def call_api(feature_dict):
         url = "http://192.168.100.117:32054/predict"
@@ -393,9 +446,31 @@ with DAG(
 
         return f"Inserted user_id={data.get('user_id')} successfully"
 
+    def get_latest_rs_line():
+        cmd = [
+            "kubectl", "get", "rs",
+            "-n", "afusion-ai-nuextract",
+            "--sort-by=.metadata.creationTimestamp"
+        ]
+
+        result = subprocess.run(cmd, capture_output=True, text=True)
+
+        lines = [line for line in result.stdout.splitlines() if "ft-ml-pipeline" in line]
+
+        if not lines:
+            return None
+
+        latest_line = lines[-1]
+
+        rs_name = latest_line.split()[0]
+
+        return rs_name
+
+
+
     t1 = load_data_from_postgre()
     t2 = trigger_gits()
-    t3 = wait_api()
+    t3 = wait_api(t2)
     t4 = call_api(t1)
     t5 = save_data(t4)
 
