@@ -454,10 +454,10 @@ with DAG(
         api = client.AppsV1Api()
 
         rs_list = api.list_namespaced_replica_set(namespace="afusion-ai-nuextract")
-
+        print(rs_list)
         # Filter all rs of deployment
         filtered = [rs for rs in rs_list.items if "ft-ml-pipeline" in rs.metadata.name]
-
+        print(filtered)
         if not filtered:
             return None
 
@@ -466,7 +466,7 @@ with DAG(
 
         # Last item = newest
         newest = filtered[-1]
-
+        print(newest)
         return newest.metadata.name
 
     def get_latest_rs_line1():
