@@ -243,8 +243,7 @@ with DAG(
         GIT_TOKEN = Variable.get("GIT_TOKEN")
         # GIT_USER_PUSH = Variable.get("GIT_USER_PUSH")
         # GIT_PASS_PUSH = Variable.get("GIT_PASS_PUSH")
-        print(GIT_USER_PUSH)
-        print(GIT_PASS_PUSH)
+    
         print(GIT_USER)
         print(GIT_EMAIL)
         print(f"[INFO] Start trigger_gits task")
