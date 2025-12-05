@@ -264,11 +264,11 @@ with DAG(
             subprocess.run(cmd, shell=True, check=True)
         except subprocess.CalledProcessError as e:
             print(f"[ERROR] Clone failed: {e}")
-            return None
+            return last_deployment_name
 
         if not os.path.exists(os.path.join(LOCAL_DIR, ".git")):
             print(f"[ERROR] Clone failed: .git folder not found")
-            return None
+            return last_deployment_name
 
         print("[INFO] Clone completed")
 
@@ -327,7 +327,7 @@ with DAG(
             return last_deployment_name
         except subprocess.CalledProcessError as e:
             print(f"[ERROR] Push failed: {e}")
-            return None
+            return last_deployment_name
     @task
     def wait_api(last_deployment_name):
         if last_deployment_name is None:
