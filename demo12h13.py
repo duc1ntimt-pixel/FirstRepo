@@ -184,6 +184,8 @@ with DAG(
         return feature_dict
     @task
     def trigger_gits():
+        import pexpect
+        print(pexpect)
         GIT_REPO  = Variable.get("GIT_REPO")
         LOCAL_DIR  = Variable.get("LOCAL_DIR")
         GIT_USER  = Variable.get("GIT_USER")
