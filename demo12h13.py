@@ -1,5 +1,3 @@
-# /opt/airflow/dags/test_postgres_connection.py
-
 import psycopg2
 from airflow import DAG
 from airflow.decorators import task
@@ -64,13 +62,12 @@ with DAG(
         user_id = dag_run.conf.get("user_id", 7973162)
         print(user_id)
         try:
-            # Dùng pandas + psycopg2 connection → 100% không lỗi cursor
             df_demo = pd.read_sql("SELECT * FROM demographic WHERE user_id = %s", conn, params=(user_id,))
             df_gambling = pd.read_sql("SELECT * FROM gambling WHERE user_id = %s", conn, params=(user_id,))
             df_rg = pd.read_sql("SELECT * FROM rg_information WHERE user_id = %s", conn, params=(user_id,))
 
         finally:
-            conn.close()  # luôn đóng kết nối
+            conn.close()
 
         if df_demo.empty:
             raise ValueError("❌ User not found in demographic table")
@@ -209,7 +206,6 @@ with DAG(
         print(GIT_EMAIL)
         print(f"[INFO] Start trigger_gits task")
 
-        # Xóa folder cũ nếu có
         if os.path.exists(LOCAL_DIR):
             print(f"[INFO] Removing existing folder: {LOCAL_DIR}")
             subprocess.run(["rm", "-rf", LOCAL_DIR], check=True)
@@ -233,10 +229,9 @@ with DAG(
 
         print("[INFO] Clone completed")
 
-        # Đường dẫn file deploy.md
         deploy_file = os.path.join(LOCAL_DIR, "deploy.md")
 
-        # Nếu không có thì tạo mới
+        # create new
         if not os.path.exists(deploy_file):
             print(f"[INFO] Creating deploy.md")
             with open(deploy_file, "w") as f:
@@ -246,13 +241,13 @@ with DAG(
 
         files = os.listdir(LOCAL_DIR)
         if files:
-            print(f"[INFO] Clone check OK, các file/folder trong repo:")
+            print(f"[INFO] file/folder in repo:")
             for f in files:
                 print(f" - {f}")
         else:
-            print(f"[WARNING] Repo đã clone nhưng trống")
+            print(f"[WARNING] Repo cloned, sEmpty")
 
-        # Thêm tag ngày giờ
+        # add Tad Datetime
         tag = datetime.now().strftime("Deploy at %Y-%m-%d %H:%M:%S\n")
         with open(deploy_file, "a") as f:
             f.write(tag)
@@ -266,7 +261,7 @@ with DAG(
         print(f"[INFO] Adding deploy.md to git")
         remote_name = "origin"
         auth_repo = GIT_REPO.replace("https://", f"https://{GIT_USER}:{GIT_TOKEN}@")
-        subprocess.run(["git", "remote", "remove", remote_name], cwd=LOCAL_DIR, check=False)  # Xóa nếu đã tồn tại
+        subprocess.run(["git", "remote", "remove", remote_name], cwd=LOCAL_DIR, check=False)  # delete if existed
         subprocess.run(["git", "remote", "add", remote_name, auth_repo], cwd=LOCAL_DIR, check=True)
         print(f"[INFO] Remote {remote_name} set to {auth_repo}")
         print("[INFO] Checking git remote -v")
@@ -289,53 +284,17 @@ with DAG(
         except subprocess.CalledProcessError as e:
             print(f"[ERROR] Push failed: {e}")
             return
-            
-        # try:
-        #     # spawn process
-        #     child = pexpect.spawn(push_cmd, cwd=LOCAL_DIR, timeout=120)
-
-        #     # Chờ git hỏi username
-        #     i = child.expect([
-        #         "Username for .*:", 
-        #         "Password for .*:", 
-        #         pexpect.EOF, 
-        #         pexpect.TIMEOUT
-        #     ])
-
-        #     if i == 0:
-        #         print("[EXPECT] Git yêu cầu Username → gửi username")
-        #         child.sendline(GIT_USER_PUSH)
-        #         i = child.expect(["Password for .*:", pexpect.EOF, pexpect.TIMEOUT])
-
-        #     if i == 1:
-        #         print("[EXPECT] Git yêu cầu Password → gửi password")
-        #         child.sendline(GIT_PASS_PUSH)
-        #         child.expect(pexpect.EOF)
-
-        #     print("[INFO] Push completed successfully")
-
-        # except Exception as e:
-        #     print(f"[ERROR] Push failed with pexpect: {e}")
-        #     try:
-        #         print("[INFO] Output từ git:")
-        #         print(child.before.decode() if child.before else "")
-        #         print(child.after.decode() if child.after else "")
-        #     except:
-        #         pass
-        #     return
-
     @task
     def wait_api():
-        url = "http://192.168.100.117:32053/" # 3
-        max_retries = 100          # số lần thử tối đa (hoặc có thể bỏ nếu muốn loop vô hạn)
-        retry_delay = 5            # giây giữa các lần thử
+        url = "http://192.168.100.117:32053/"
+        max_retries = 100          # max try 
+        retry_delay = 5            # delay
 
         for attempt in range(max_retries):
             try:
                 response = requests.get(url, timeout=5)
                 if response.status_code == 200:
                     data = response.json()
-                    # Kiểm tra điều kiện API sẵn sàng
                     if data.get("status") == "RG Prediction API is running." and data.get("model_loaded") == True:
                         print(f"[INFO] API is ready: {data}")
                         return data
@@ -354,7 +313,7 @@ with DAG(
         url = "http://192.168.100.117:32053/predict"
         headers = {"accept": "application/json", "Content-Type": "application/json"}
 
-        # Gọi API
+        # call API
         try:
             feature_dict = convert_numpy_to_python(feature_dict)
 
@@ -372,20 +331,20 @@ with DAG(
         if data is None:
             print("[WARNING] No data to save, skipping task.")
             return "No data to save"
-        # 2. Kết nối PostgreSQL
+        # 2. Connect PostgreSQL
         conn = psycopg2.connect(**POSTGRES_CONFIG)
         cur = conn.cursor()
 
-        # 3. Chuẩn bị chèn dữ liệu
+        # 3. insert data
         cols = ', '.join(data.keys())
         vals_placeholders = ', '.join(['%s'] * len(data))
         sql = f"INSERT INTO user_analysis ({cols}) VALUES ({vals_placeholders})"
 
-        # 4. Thực thi
+        # 4. execute
         cur.execute(sql, list(data.values()))
         conn.commit()
 
-        # 5. Đóng kết nối
+        # 5. Close connect
         cur.close()
         conn.close()
 
