@@ -447,6 +447,29 @@ with DAG(
         return f"Inserted user_id={data.get('user_id')} successfully"
 
     def get_latest_rs_line():
+        # Load in-cluster config
+        config.load_incluster_config()
+
+        api = client.AppsV1Api()
+
+        rs_list = api.list_namespaced_replica_set(namespace="afusion-ai-nuextract")
+
+        # Filter all rs of deployment
+        filtered = [rs for rs in rs_list.items if "ft-ml-pipeline" in rs.metadata.name]
+
+        if not filtered:
+            return None
+
+        # Sort by creationTimestamp
+        filtered.sort(key=lambda x: x.metadata.creation_timestamp)
+
+        # Last item = newest
+        newest = filtered[-1]
+
+        return newest.metadata.name
+        
+    def get_latest_rs_line1():
+        from kubernetes import client, config
         cmd = [
             "kubectl", "get", "rs",
             "-n", "afusion-ai-nuextract",
