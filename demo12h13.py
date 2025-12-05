@@ -329,7 +329,7 @@ with DAG(
             return
     @task
     def wait_api():
-        url = "http://192.168.100.117:32053/"
+        url = "http://192.168.100.117:32054/"
         max_retries = 100          # max try 
         retry_delay = 5            # delay
 
@@ -353,7 +353,7 @@ with DAG(
         raise Exception(f"API not ready after {max_retries} attempts")
     @task
     def call_api(feature_dict):
-        url = "http://192.168.100.117:32053/predict"
+        url = "http://192.168.100.117:32054/predict"
         headers = {"accept": "application/json", "Content-Type": "application/json"}
 
         # call API
