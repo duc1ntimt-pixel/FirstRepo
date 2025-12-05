@@ -61,7 +61,8 @@ with DAG(
     @task
     def load_data_from_postgre(dag_run=None):
         conn = psycopg2.connect(**POSTGRES_CONFIG)
-        user_id = dag_run.conf.get("user_id", 9822065)
+        user_id = dag_run.conf.get("user_id", 7973162)
+        print(user_id)
         try:
             # Dùng pandas + psycopg2 connection → 100% không lỗi cursor
             df_demo = pd.read_sql("SELECT * FROM demographic WHERE user_id = %s", conn, params=(user_id,))
