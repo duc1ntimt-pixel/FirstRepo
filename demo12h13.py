@@ -299,15 +299,15 @@ with DAG(
 
         #     print("[INFO] Push completed successfully")
 
-        except Exception as e:
-            print(f"[ERROR] Push failed with pexpect: {e}")
-            try:
-                print("[INFO] Output từ git:")
-                print(child.before.decode() if child.before else "")
-                print(child.after.decode() if child.after else "")
-            except:
-                pass
-            return
+        # except Exception as e:
+        #     print(f"[ERROR] Push failed with pexpect: {e}")
+        #     try:
+        #         print("[INFO] Output từ git:")
+        #         print(child.before.decode() if child.before else "")
+        #         print(child.after.decode() if child.after else "")
+        #     except:
+        #         pass
+        #     return
 
     @task
     def wait_api():
