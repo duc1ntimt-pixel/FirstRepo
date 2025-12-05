@@ -253,13 +253,13 @@ with DAG(
 
         print(f"[INFO] Adding deploy.md to git")
         remote_name = "origin"
-        auth_repo = GIT_REPO.replace("https://", f"https://{GIT_USER_PUSH}:{GIT_PASS_PUSH}@")
+        auth_repo = GIT_REPO.replace("https://", f"https://{GIT_USER}:{GIT_TOKEN}@")
         subprocess.run(["git", "remote", "remove", remote_name], cwd=LOCAL_DIR, check=False)  # Xóa nếu đã tồn tại
         subprocess.run(["git", "remote", "add", remote_name, auth_repo], cwd=LOCAL_DIR, check=True)
         print(f"[INFO] Remote {remote_name} set to {auth_repo}")
         print("[INFO] Checking git remote -v")
         subprocess.run(["git", "remote", "-v"], cwd=LOCAL_DIR, check=True)
-        
+
         subprocess.run(["git", "add", "deploy.md"], cwd=LOCAL_DIR, check=True)
 
         print(f"[INFO] Committing changes")
