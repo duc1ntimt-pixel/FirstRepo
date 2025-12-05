@@ -9,3 +9,4 @@ catboost
 seaborn
 psycopg2-binary
 pexpect
+ptyprocess
