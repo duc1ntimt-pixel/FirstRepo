@@ -128,18 +128,18 @@ with DAG(
             "num_bets": ["sum", "mean"]
         })
 
-        # df_agg.columns = ["total_turnover", "mean_turnover",
-        #                 "total_hold", "mean_hold",
-        #                 "total_bets", "mean_bets"]
-        df_agg.columns = ['_'.join(col).strip() for col in df_agg.columns.values]
-        df_agg = df_agg.rename(columns={
-            'turnover_sum': 'total_turnover',
-            'turnover_mean': 'mean_turnover',
-            'hold_sum': 'total_hold',
-            'hold_mean': 'mean_hold',
-            'num_bets_sum': 'total_bets',
-            'num_bets_mean': 'mean_bets',
-        })
+        df_agg.columns = ["total_turnover", "mean_turnover",
+                        "total_hold", "mean_hold",
+                        "total_bets", "mean_bets"]
+        # df_agg.columns = ['_'.join(col).strip() for col in df_agg.columns.values]
+        # df_agg = df_agg.rename(columns={
+        #     'turnover_sum': 'total_turnover',
+        #     'turnover_mean': 'mean_turnover',
+        #     'hold_sum': 'total_hold',
+        #     'hold_mean': 'mean_hold',
+        #     'num_bets_sum': 'total_bets',
+        #     'num_bets_mean': 'mean_bets',
+        # })
 
         first_bet = df_gambling["date"].min()
         last_bet = df_gambling["date"].max()
