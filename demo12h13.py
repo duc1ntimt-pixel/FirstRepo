@@ -447,6 +447,7 @@ with DAG(
         return f"Inserted user_id={data.get('user_id')} successfully"
 
     def get_latest_rs_line():
+        from kubernetes import client, config
         # Load in-cluster config
         config.load_incluster_config()
 
@@ -467,9 +468,9 @@ with DAG(
         newest = filtered[-1]
 
         return newest.metadata.name
-        
+
     def get_latest_rs_line1():
-        from kubernetes import client, config
+        
         cmd = [
             "kubectl", "get", "rs",
             "-n", "afusion-ai-nuextract",
