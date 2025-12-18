@@ -29,7 +29,7 @@ def get_PostgreSQL_conn_params() -> Dict[str, str]:
     username = os.getenv("AZURE_SQL_USERNAME")
     password = os.getenv("AZURE_SQL_PASSWORD")
     server   = os.getenv("AZURE_SQL_SERVER")
-    port     = os.getenv("AZURE_SQL_PORT", "5432")
+    port     = os.getenv("AZURE_SQL_PORT", "1433")
     database = os.getenv("AZURE_SQL_DATABASE")
 
     if not all([username, password, server, database]):
