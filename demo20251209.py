@@ -1,4 +1,4 @@
-import psycopg2
+import pyodbc
 from airflow import DAG
 from airflow.decorators import task
 import subprocess
@@ -24,41 +24,24 @@ def convert_numpy_to_python(d):
     return d
 
 
-
-def get_PostgreSQL_conn_params() -> Dict[str, str]:
+def get_mssql_conn():
     username = os.getenv("AZURE_SQL_USERNAME")
     password = os.getenv("AZURE_SQL_PASSWORD")
     server   = os.getenv("AZURE_SQL_SERVER")
-    port     = os.getenv("AZURE_SQL_PORT", "1433")
     database = os.getenv("AZURE_SQL_DATABASE")
 
-    if not all([username, password, server, database]):
-        missing = [k for k, v in {
-            "AZURE_SQL_USERNAME": username,
-            "AZURE_SQL_PASSWORD": password,
-            "AZURE_SQL_SERVER": server,
-            "AZURE_SQL_DATABASE": database
-        }.items() if not v]
-        raise AirflowException(f"Missing SQL env vars: {missing}")
+    conn_str = (
+        "DRIVER={ODBC Driver 18 for SQL Server};"
+        f"SERVER={server};"
+        f"DATABASE={database};"
+        f"UID={username};"
+        f"PWD={password};"
+        "Encrypt=yes;"
+        "TrustServerCertificate=no;"
+    )
+    print(f"Connecting to Azure SQL: {conn_str}")
 
-    params = {
-        "host": server,
-        "port": int(port),
-        "dbname": database,
-        "user": username,
-        "password": password,
-        # optional: connect timeout
-        "connect_timeout": 10
-    }
-
-    print(f"Connecting to PostgreSQL: {server}/{database}:{port} as {username}")
-    # mask password in debug
-    safe = params.copy()
-    safe["password"] = "***"
-    print(f"Conn params (masked): {safe}")
-    return params
-
-POSTGRES_CONFIG = get_PostgreSQL_conn_params()
+    return pyodbc.connect(conn_str, timeout=10)
 
 default_args = {
     "owner": "airflow",
@@ -76,33 +59,27 @@ with DAG(
     @task()
     def test_connection():
         try:
-            conn = psycopg2.connect(**POSTGRES_CONFIG)
+            conn = get_mssql_conn()
             cur = conn.cursor()
-            cur.execute("SELECT version();")
+            cur.execute("SELECT @@VERSION;")
             version = cur.fetchone()[0]
-            print("PostgreSQL version:", POSTGRES_CONFIG)
-            print("PostgreSQL version:", version)
+            print("Azure SQL version:", version)
             cur.close()
             conn.close()
-            return "SUCCESS: Connected to PostgreSQL"
+            return "SUCCESS: Connected to AzureMSSQL"
         except Exception as e:
             print("ERROR:", str(e))
             raise e
 
     @task
-    def load_data_from_postgre(dag_run=None):
-        # import psycopg2
-        # import pandas as pd
-        # import numpy as np
-        # from datetime import datetime
-
-        conn = psycopg2.connect(**POSTGRES_CONFIG)
+    def load_data_from_db(dag_run=None):
+        conn = get_mssql_conn()
         user_id = dag_run.conf.get("user_id", 7973162)
 
         try:
-            df_demo = pd.read_sql("SELECT * FROM demographic WHERE user_id = %s", conn, params=(user_id,))
-            df_gambling = pd.read_sql("SELECT * FROM gambling WHERE user_id = %s", conn, params=(user_id,))
-            df_rg = pd.read_sql("SELECT * FROM rg_information WHERE user_id = %s", conn, params=(user_id,))
+            df_demo = pd.read_sql("SELECT * FROM demographic WHERE user_id = ?", conn, params=(user_id,))
+            df_gambling = pd.read_sql("SELECT * FROM gambling WHERE user_id =?", conn, params=(user_id,))
+            df_rg = pd.read_sql("SELECT * FROM rg_information WHERE user_id = ?", conn, params=(user_id,))
         finally:
             conn.close()
 
@@ -444,14 +421,15 @@ with DAG(
         if data is None:
             print("[WARNING] No data to save, skipping task.")
             return "No data to save"
-        # 2. Connect PostgreSQL
-        conn = psycopg2.connect(**POSTGRES_CONFIG)
+        # 2. Connect AzureMSSQL
+        conn = get_mssql_conn()
         cur = conn.cursor()
 
         # 3. insert data
         cols = ', '.join(data.keys())
-        vals_placeholders = ', '.join(['%s'] * len(data))
+        vals_placeholders = ', '.join(['?'] * len(data))
         sql = f"INSERT INTO user_analysis ({cols}) VALUES ({vals_placeholders})"
+        cur.execute(sql, list(data.values()))
 
         # 4. execute
         cur.execute(sql, list(data.values()))
@@ -487,7 +465,7 @@ with DAG(
         print("lastname:" ,newest.metadata.name)
         return newest.metadata.name
 
-    t1 = load_data_from_postgre()
+    t1 = load_data_from_db()
     t2 = trigger_gits()
     t3 = wait_api(t2)
     t4 = call_api(t1)
