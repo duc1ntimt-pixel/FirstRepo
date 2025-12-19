@@ -15,7 +15,7 @@ with DAG(
         task_id="spark_pi_submit",
         namespace="spark-jobs",
         # ĐỔI TÊN THAM SỐ Ở ĐÂY: application -> application_file
-        application_file={
+        application={
             "apiVersion": "sparkoperator.k8s.io/v1beta2",
             "kind": "SparkApplication",
             "metadata": {
