@@ -1,0 +1,25 @@
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: spark-pi-{{ ts_nodash | lower }}
+  namespace: spark-jobs
+spec:
+  type: Python
+  mode: cluster
+  sparkVersion: "3.5.1"
+  image: apache/spark:3.5.1
+  imagePullPolicy: IfNotPresent
+  mainApplicationFile: local:///opt/spark/examples/src/main/python/pi.py
+
+  driver:
+    cores: 1
+    memory: 512m
+    serviceAccount: spark-driver
+
+  executor:
+    cores: 1
+    instances: 1
+    memory: 512m
+
+  restartPolicy:
+    type: Never
