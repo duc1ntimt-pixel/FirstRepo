@@ -14,7 +14,7 @@ with DAG(
     spark_pi_submit = SparkKubernetesOperator(
         task_id="spark_pi_submit",
         namespace="spark-jobs",
-        application_file="repo/spark-pi.yaml",
+        application_file="spark-pi.yaml",
         do_xcom_push=True,
     )
 
