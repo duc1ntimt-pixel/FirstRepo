@@ -13,13 +13,19 @@ spec:
 
   driver:
     cores: 1
-    memory: 512m
+    coreRequest: "100m"
+    coreLimit: "500m"
+    memory: "512m"
+    memoryOverhead: "128m"
     serviceAccount: spark-driver
 
   executor:
-    cores: 1
     instances: 1
-    memory: 512m
+    cores: 1
+    coreRequest: "100m"
+    coreLimit: "500m"
+    memory: "512m"
+    memoryOverhead: "128m"
 
   restartPolicy:
     type: Never
