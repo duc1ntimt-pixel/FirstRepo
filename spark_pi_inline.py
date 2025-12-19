@@ -14,14 +14,34 @@ with DAG(
     spark_pi_submit = SparkKubernetesOperator(
         task_id="spark_pi_submit",
         namespace="spark-jobs",
-        application={
+        # ĐỔI TÊN THAM SỐ Ở ĐÂY: application -> application_file
+        application_file={
             "apiVersion": "sparkoperator.k8s.io/v1beta2",
             "kind": "SparkApplication",
             "metadata": {
-                "name": "spark-pi-{{ ts_nodash }}"
+                # Thêm lower để tránh lỗi Kubernetes đặt tên có chữ in hoa
+                "name": "spark-pi-{{ ts_nodash | lower }}"
             },
             "spec": {
-                # spark spec của bạn
+                "type": "Python",
+                "mode": "cluster",
+                "sparkVersion": "3.5.1",
+                "image": "apache/spark:3.5.1",
+                "imagePullPolicy": "IfNotPresent",
+                "mainApplicationFile": "local:///opt/spark/examples/src/main/python/pi.py",
+                "driver": {
+                    "cores": 1,
+                    "memory": "512m",
+                    "serviceAccount": "spark-driver",
+                },
+                "executor": {
+                    "cores": 1,
+                    "instances": 1,
+                    "memory": "512m",
+                },
+                "restartPolicy": {
+                    "type": "Never"
+                }
             },
         },
         do_xcom_push=True,
@@ -30,6 +50,7 @@ with DAG(
     spark_pi_sensor = SparkKubernetesSensor(
         task_id="spark_pi_sensor",
         namespace="spark-jobs",
+        # Lấy tên từ XCom trả về của task trước
         application_name="{{ task_instance.xcom_pull(task_ids='spark_pi_submit')['metadata']['name'] }}",
         poke_interval=10,
     )
