@@ -5,7 +5,7 @@ from datetime import datetime
 with DAG(
     dag_id="spark_pi_k8s",
     start_date=datetime(2025, 12, 18),
-    schedule=None,              # ✅ sửa ở đây
+    schedule=None,
     catchup=False,
     tags=["spark", "kubernetes"],
 ) as dag:
@@ -16,13 +16,16 @@ with DAG(
         conn_id="spark_default",
         executor_cores=1,
         executor_memory="512m",
-        driver_cores=1,
-        driver_memory="512m",
+        driver_memory="512m",   # ✅ còn hợp lệ
         name="spark-pi-job",
         verbose=True,
         conf={
             "spark.kubernetes.namespace": "spark-jobs",
-            "spark.kubernetes.container.image": "spark:latest",
+            "spark.kubernetes.container.image": "apache/spark:3.5.1",
+
+            # ✅ driver cores phải set ở conf
+            "spark.driver.cores": "1",
+
             "spark.submit.deployMode": "cluster",
             "spark.kubernetes.authenticate.driver.serviceAccountName": "spark",
         },
