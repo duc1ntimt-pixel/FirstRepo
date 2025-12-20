@@ -16,7 +16,7 @@ with DAG(
         task_id="spark_pi_submit",
         namespace="spark-jobs",
         application_file="spark-pi.yaml", 
-        do_xcom_push=True, # Đẩy toàn bộ YAML/JSON kết quả vào DB
+        do_xcom_push=False, # Đẩy toàn bộ YAML/JSON kết quả vào DB
         get_logs=False, 
     )
 
@@ -26,7 +26,8 @@ with DAG(
         task_id="spark_pi_sensor",
         namespace="spark-jobs",
         # Cách lấy name an toàn trong Airflow 3
-        application_name="{{ task_instance.xcom_pull(task_ids='spark_pi_submit')['metadata']['name'] }}",
+        application_name="spark-pi-{{ ts_nodash | lower }}",
+        # application_name="{{ task_instance.xcom_pull(task_ids='spark_pi_submit')['metadata']['name'] }}",
         poke_interval=10,
         timeout=600,
         mode="reschedule",
