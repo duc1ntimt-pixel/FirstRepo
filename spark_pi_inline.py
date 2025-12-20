@@ -18,6 +18,7 @@ with DAG(
         application_file="spark-pi.yaml", 
         do_xcom_push=False, # Đẩy toàn bộ YAML/JSON kết quả vào DB
         get_logs=False, 
+        random_name_suffix=False,
     )
 
     # 2. SparkKubernetesSensor
