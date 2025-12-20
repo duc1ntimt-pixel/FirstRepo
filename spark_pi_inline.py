@@ -16,6 +16,7 @@ with DAG(
         namespace="spark-jobs",
         application_file="spark-pi.yaml",
         do_xcom_push=True,
+        get_logs=True,
     )
 
     spark_pi_sensor = SparkKubernetesSensor(
