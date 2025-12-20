@@ -16,7 +16,7 @@ with DAG(
         task_id="spark_pi_submit",
         namespace="spark-jobs",
         application_file="spark-pi.yaml", 
-        do_xcom_push=False, # Đẩy toàn bộ YAML/JSON kết quả vào DB
+        do_xcom_push=True, # Đẩy toàn bộ YAML/JSON kết quả vào DB
         get_logs=False, 
     )
 
