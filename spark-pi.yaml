@@ -18,7 +18,8 @@ spec:
     memory: "512m"
     memoryOverhead: "128m"
     serviceAccount: spark-driver
-
+    deleteOnTermination: false 
+    
   executor:
     instances: 1
     cores: 1
