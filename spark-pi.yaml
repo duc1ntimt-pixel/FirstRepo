@@ -15,7 +15,7 @@ spec:
     cores: 1
     coreRequest: "250m"
     coreLimit: "500m"
-    memory: "1Gi"            # tăng lên để driver start được
+    memory: "512m"            # tăng lên để driver start được
     memoryOverhead: "256m"
     serviceAccount: spark-driver
     deleteOnTermination: false
@@ -25,7 +25,7 @@ spec:
     cores: 1
     coreRequest: "250m"
     coreLimit: "500m"
-    memory: "1Gi"           # tăng lên
+    memory: "512m"           # tăng lên
     memoryOverhead: "256m"
 
   restartPolicy:
