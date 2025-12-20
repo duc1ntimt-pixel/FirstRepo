@@ -12,21 +12,21 @@ spec:
   mainApplicationFile: local:///opt/spark/examples/src/main/python/pi.py
 
   driver:
-    cores: 1                 # số nguyên
-    coreRequest: "100m"      # 0.1 CPU, rất nhẹ
-    coreLimit: "250m"
-    memory: "256m"           # nhẹ
-    memoryOverhead: "64m"
+    cores: 1
+    coreRequest: "250m"
+    coreLimit: "500m"
+    memory: "1Gi"            # tăng lên để driver start được
+    memoryOverhead: "256m"
     serviceAccount: spark-driver
     deleteOnTermination: false
 
   executor:
     instances: 1
     cores: 1
-    coreRequest: "100m"
-    coreLimit: "250m"
-    memory: "256m"
-    memoryOverhead: "64m"
+    coreRequest: "250m"
+    coreLimit: "500m"
+    memory: "1Gi"           # tăng lên
+    memoryOverhead: "256m"
 
   restartPolicy:
     type: Never
