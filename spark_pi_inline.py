@@ -4,49 +4,30 @@ from airflow.providers.cncf.kubernetes.sensors.spark_kubernetes import SparkKube
 from datetime import datetime
 
 with DAG(
-    dag_id="spark_pi_xcom_debug",
+    dag_id="spark_pi_xcom_fixed",
     start_date=datetime(2025, 12, 18),
     schedule=None,
     catchup=False,
-    tags=["spark", "debug"],
 ) as dag:
 
     # 1. Submit SparkApplication
-    # Operator này sẽ tạo một "Launcher Pod" trên Airflow để gửi request đến Spark Operator
+    # SparkKubernetesOperator mặc định trả về nội dung của SparkApplication (JSON)
     spark_submit = SparkKubernetesOperator(
         task_id="spark_pi_submit",
         namespace="spark-jobs",
         application_file="spark-pi.yaml", 
-        do_xcom_push=True,  # Kích hoạt XCom Sidecar
-        get_logs=True,
-        # Cấu hình để "cứu" sidecar nếu do thiếu tài nguyên hoặc lỗi định nghĩa pod
-        executor_config={
-            "pod_override": {
-                "spec": {
-                    "containers": [
-                        {
-                            "name": "base", # Container chính của Airflow Worker
-                            "resources": {
-                                "requests": {"cpu": "100m", "memory": "128Mi"},
-                                "limits": {"cpu": "200m", "memory": "256Mi"}
-                            }
-                        }
-                        # Airflow sẽ tự chèn container 'xcom-sidecar' vào đây
-                    ]
-                }
-            }
-        },
+        do_xcom_push=True, # Đẩy toàn bộ YAML/JSON kết quả vào DB
     )
 
     # 2. SparkKubernetesSensor
-    # Lấy trực tiếp metadata['name'] từ XCom của task spark_pi_submit
+    # Dùng .output để lấy trực tiếp giá trị từ task trước
     spark_sensor = SparkKubernetesSensor(
         task_id="spark_pi_sensor",
         namespace="spark-jobs",
-        application_name="{{ (ti.xcom_pull(task_ids='spark_pi_submit'))['metadata']['name'] }}",
+        # Cách lấy name an toàn trong Airflow 3
+        application_name="{{ task_instance.xcom_pull(task_ids='spark_pi_submit')['metadata']['name'] }}",
         poke_interval=10,
         timeout=600,
     )
 
-    # Flow đơn giản: Submit xong thì Sensor chạy luôn
     spark_submit >> spark_sensor
