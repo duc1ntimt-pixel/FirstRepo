@@ -13,20 +13,20 @@ spec:
 
   driver:
     cores: 1
-    coreRequest: "50m"
+    coreRequest: "250m"
     coreLimit: "500m"
-    memory: "512m"
-    memoryOverhead: "128m"
+    memory: "1Gi"
+    memoryOverhead: "256m"
     serviceAccount: spark-driver
     deleteOnTermination: false 
 
   executor:
     instances: 1
     cores: 1
-    coreRequest: "50m"
+    coreRequest: "250m"
     coreLimit: "500m"
-    memory: "512m"
-    memoryOverhead: "128m"
+    memory: "1Gi"
+    memoryOverhead: "256m"
 
   restartPolicy:
     type: Never
