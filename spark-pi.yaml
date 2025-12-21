@@ -1,7 +1,7 @@
 apiVersion: sparkoperator.k8s.io/v1beta2
 kind: SparkApplication
 metadata:
-  name: spark-pi-example          # <-- Tên CỐ ĐỊNH, KHÔNG để generateName, và khớp với application_name trong sensor
+  name: spark-pi-example-{{ ts_nodash }}          # <-- Tên CỐ ĐỊNH, KHÔNG để generateName, và khớp với application_name trong sensor
   namespace: spark-jobs
 spec:
   type: Scala
@@ -15,12 +15,12 @@ spec:
   restartPolicy:
     type: Never
   driver:
-    cores: 1
-    coreLimit: "1200m"
-    memory: "1g"
+    cores: 0.25
+    coreLimit: "250m"
+    memory: "384m"
     serviceAccount: spark
   executor:
-    cores: 2
-    instances: 2
-    memory: "2g"
+    cores: 0.5
+    instances: 1
+    memory: "768m"
     serviceAccount: spark
