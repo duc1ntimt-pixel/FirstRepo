@@ -23,5 +23,5 @@ spec:
   executor:
     coreRequest: "200m"
     coreLimit: "500m"
-    memory: "1Gi"
+    memory: "1g"
     serviceAccount: spark
