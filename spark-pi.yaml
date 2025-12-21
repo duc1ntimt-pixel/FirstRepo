@@ -6,7 +6,7 @@ metadata:
 spec:
   type: Scala
   mode: cluster
-  image: "acrmlfoteaidev.azurecr.io/spark-py-job:v1"
+  image: "acrmlfoteaidev.azurecr.io/spark-py-job:v2"
   imagePullPolicy: Always
   mainClass: org.apache.spark.examples.SparkPi
   mainApplicationFile: "local:///opt/spark/work-dir/spark_pi.py"
