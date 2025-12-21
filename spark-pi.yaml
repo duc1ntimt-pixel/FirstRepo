@@ -10,7 +10,7 @@ spec:
   imagePullPolicy: Always
   mainClass: org.apache.spark.examples.SparkPi
   mainApplicationFile: "local:///opt/spark/work-dir/spark_pi.py"
-  arguments: ["10000"]
+  arguments: ["100"]
   sparkVersion: "3.5.0"
   restartPolicy:
     type: Never
