@@ -23,3 +23,4 @@ spec:
     cores: 2
     instances: 2
     memory: "2g"
+    serviceAccount: spark
