@@ -15,12 +15,14 @@ spec:
   restartPolicy:
     type: Never
   driver:
-    cores: 0.25
+    cores: 1
     coreLimit: "250m"
     memory: "384m"
     serviceAccount: spark
+
   executor:
-    cores: 0.5
+    cores: 1
+    coreLimit: "500m"
     instances: 1
     memory: "768m"
     serviceAccount: spark
