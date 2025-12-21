@@ -16,13 +16,13 @@ spec:
     type: Never
   driver:
     cores: 1
-    coreLimit: "250m"
+    coreLimit: "1000m"
     memory: "384m"
     serviceAccount: spark
 
   executor:
     cores: 1
-    coreLimit: "500m"
+    coreLimit: "1000m"
     instances: 1
     memory: "768m"
     serviceAccount: spark
