@@ -15,7 +15,6 @@ with DAG(
         task_id="spark_pi_submit",
         namespace="spark-jobs",                  # Namespace chạy Spark job
         application_file="spark-pi.yaml",        # File YAML trong thư mục dags/
-        kubernetes_conn_id="kubernetes_default", # Connection tới cluster
         do_xcom_push=False,                      # Tắt để tránh bug
         get_logs=True,                           # Vẫn lấy log driver pod hiển thị trong UI
         random_name_suffix=False,                # TẮT suffix random → name cố định, predictable
